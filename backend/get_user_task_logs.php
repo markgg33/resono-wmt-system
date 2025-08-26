@@ -26,7 +26,8 @@ $query = "
   JOIN work_modes wm ON wm.id = tl.work_mode_id
   JOIN task_descriptions td ON td.id = tl.task_description_id
   WHERE tl.user_id = ?
-  ORDER BY tl.id ASC
+    AND DATE_FORMAT(tl.date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+  ORDER BY tl.date ASC, tl.id ASC
 ";
 
 $stmt = $conn->prepare($query);
@@ -45,7 +46,6 @@ while ($row = $result->fetch_assoc()) {
   } else {
     $row['computed_duration'] = '--';
   }
-
   $logs[] = $row;
 }
 

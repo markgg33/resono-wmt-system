@@ -56,7 +56,7 @@
                             placeholder="Enter your password"
                             required />
                         <span class="input-group-text toggle-password" onclick="togglePassword('password')">
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="fa-solid fa-eye-slash"></i>
                         </span>
                     </div>
 

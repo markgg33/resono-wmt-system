@@ -205,3 +205,156 @@
 .btn-register:hover{
   background-color: #168e06;
 }
+
+/* Card container */
+.profile-card {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Form spacing */
+.modern-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Input styling */
+.form-control-modern {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control-modern:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 4px rgba(0,123,255,0.4);
+}
+
+/* Label styling */
+.form-group label {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+/* Button styling */
+.btn-modern {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+}
+
+/* Primary button */
+.btn-primary-modern {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary-modern:hover {
+    background: #0056b3;
+}
+
+/* Warning button */
+.btn-warning-modern {
+    background: #f0ad4e;
+    color: white;
+}
+
+.btn-warning-modern:hover {
+    background: #d48a1c;
+}
+
+
+/*EDIT PROFILE STYLES*/
+
+/* Card container */
+.profile-card {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Form spacing */
+.modern-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Input styling */
+.form-control-modern {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control-modern:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 4px rgba(0,123,255,0.4);
+}
+
+/* Label styling */
+.form-group label {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+/* Button styling */
+.btn-modern {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+}
+
+/* Primary button */
+.btn-primary-modern {
+    background: #1c8a00;
+    color: white;
+}
+
+.btn-primary-modern:hover {
+    background: #28c900;
+}
+
+/* Warning button */
+.btn-warning-modern {
+    background: #f0ad4e;
+    color: white;
+}
+
+.btn-warning-modern:hover {
+    background: #d48a1c;
+}

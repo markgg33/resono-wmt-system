@@ -13,32 +13,57 @@ if (!$user_id || !$work_mode_id || !$task_description_id) {
     exit;
 }
 
-// Get the end_time of the latest task
-$previous_end_time = null;
-$stmt = $conn->prepare("SELECT end_time FROM task_logs WHERE user_id = ? ORDER BY end_time DESC LIMIT 1");
-$stmt->bind_param("i", $user_id);
+// ✅ Always use MySQL server time (prevents client-side tampering)
+$current_time = null;
+$current_date = null;
+
+$res = $conn->query("SELECT NOW() AS current_time, CURDATE() AS current_date");
+if ($res && $row = $res->fetch_assoc()) {
+    $current_time = $row['current_time'];  // e.g., 2025-08-26 09:15:00
+    $current_date = $row['current_date'];  // e.g., 2025-08-26
+} else {
+    echo json_encode(['success' => false, 'message' => 'Failed to get server time.']);
+    exit;
+}
+
+// 1. Check for unfinished task today
+$stmt = $conn->prepare("
+    SELECT id, start_time 
+    FROM task_logs 
+    WHERE user_id = ? AND end_time IS NULL AND DATE(start_time) = ? 
+    ORDER BY start_time DESC 
+    LIMIT 1
+");
+$stmt->bind_param("is", $user_id, $current_date);
 $stmt->execute();
-$stmt->bind_result($previous_end_time);
-$stmt->fetch();
+$result = $stmt->get_result();
+$unfinishedTask = $result->fetch_assoc();
 $stmt->close();
 
-// Set start_time to previous end_time (or now if none)
-$start_time = $previous_end_time ?: date("Y-m-d H:i:s");
-$end_time = date("Y-m-d H:i:s");
+// 2. If unfinished task exists, close it
+if ($unfinishedTask) {
+    $task_id = $unfinishedTask['id'];
+    $start_time = new DateTime($unfinishedTask['start_time']);
+    $end_time = new DateTime($current_time);
 
-// Calculate duration in minutes
-$start = new DateTime($start_time);
-$end = new DateTime($end_time);
-$interval = $start->diff($end);
-$total_minutes = ($interval->h * 60) + $interval->i;
-$total_duration = $total_minutes . " min" . ($total_minutes === 1 ? "" : "s");
+    // Calculate duration in H:i:s
+    $interval = $start_time->diff($end_time);
+    $duration = $interval->format('%H:%I:%S');
 
-// Insert new task log
-$stmt = $conn->prepare("INSERT INTO task_logs (user_id, work_mode_id, task_description_id, start_time, end_time, total_duration) VALUES (?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("iiisss", $user_id, $work_mode_id, $task_description_id, $start_time, $end_time, $total_duration);
+    $stmt = $conn->prepare("UPDATE task_logs SET end_time = ?, total_duration = ? WHERE id = ?");
+    $stmt->bind_param("ssi", $current_time, $duration, $task_id);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// 3. Insert new task (ongoing, no end_time yet)
+$stmt = $conn->prepare("INSERT INTO task_logs (user_id, work_mode_id, task_description_id, start_time) VALUES (?, ?, ?, ?)");
+$stmt->bind_param("iiis", $user_id, $work_mode_id, $task_description_id, $current_time);
 
 if ($stmt->execute()) {
-    echo json_encode(['success' => true, 'message' => 'Task logged successfully.']);
+    echo json_encode(['success' => true, 'message' => 'Task started successfully.']);
 } else {
     echo json_encode(['success' => false, 'message' => 'Database insert error.']);
 }
+$stmt->close();
+$conn->close();

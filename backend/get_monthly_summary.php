@@ -7,7 +7,6 @@ $userId = $_SESSION['user_id'] ?? null;
 $role = $_SESSION['role'] ?? '';
 $canSearchOthers = in_array($role, ['admin', 'hr', 'executive']);
 
-
 $month = $_GET['month'] ?? date('Y-m');
 $search = $_GET['search'] ?? '';
 
@@ -27,20 +26,26 @@ if ($canSearchOthers && $search !== '') {
     $res = $stmt->get_result();
     $targetUser = $res->fetch_assoc();
     if (!$targetUser) {
-        echo json_encode(['status' => 'success', 'summary' => [], 'mtd' => '00:00']);
+        echo json_encode(['status' => 'success', 'summary' => [], 'mtd' => []]);
         exit;
     }
     $userId = $targetUser['id'];
 }
 
+// ✅ Explicit column alignment for UNION
 $logsQuery = "
-  SELECT * FROM task_logs
+  SELECT id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+  FROM task_logs
+  WHERE user_id = ? AND date BETWEEN ? AND ?
+  UNION ALL
+  SELECT original_id AS id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+  FROM task_logs_archive
   WHERE user_id = ? AND date BETWEEN ? AND ?
   ORDER BY date ASC, start_time ASC
 ";
 
 $stmt = $conn->prepare($logsQuery);
-$stmt->bind_param("iss", $userId, $monthStart, $monthEnd);
+$stmt->bind_param("ississ", $userId, $monthStart, $monthEnd, $userId, $monthStart, $monthEnd);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -52,27 +57,73 @@ while ($row = $result->fetch_assoc()) {
 
 // === Summarize Each Day ===
 $summary = [];
-$totalDurSeconds = 0;
+
+// MTD totals in seconds
+$mtdDurations = [
+    'total' => 0,
+    'production' => 0,
+    'offphone' => 0,
+    'training' => 0,
+    'resono' => 0,
+    'paid_break' => 0,
+    'unpaid_break' => 0,
+    'personal_time' => 0
+];
+
+// 🔹 Helper: allocate away-break duration properly (Paid → Unpaid → Personal)
+function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$usedUnpaidBreak)
+{
+    $remaining = $duration;
+
+    // 1. Paid Break → 30 mins (1800s) per day
+    $remainingPaidAllowance = max(0, 1800 - $usedPaidBreak);
+    if ($remainingPaidAllowance > 0) {
+        $paid = min($remaining, $remainingPaidAllowance);
+        $durations['paid_break'] += $paid;
+        $usedPaidBreak += $paid;
+        $remaining -= $paid;
+    }
+
+    // 2. Unpaid Break → next 60 mins (3600s) per day
+    if ($remaining > 0) {
+        $remainingUnpaidAllowance = max(0, 3600 - $usedUnpaidBreak);
+        if ($remainingUnpaidAllowance > 0) {
+            $unpaid = min($remaining, $remainingUnpaidAllowance);
+            $durations['unpaid_break'] += $unpaid;
+            $usedUnpaidBreak += $unpaid;
+            $remaining -= $unpaid;
+        }
+    }
+
+    // 3. Anything beyond goes to personal_time
+    if ($remaining > 0) {
+        $durations['personal_time'] += $remaining;
+    }
+}
+
+
 
 foreach ($dailyLogs as $date => $logs) {
     $login = null;
     $logout = null;
+    // Track break usage per day
+    $usedPaidBreak = 0;
+    $usedUnpaidBreak = 0; // 🔹 new tracker
 
+
+    // Compute login/logout
     foreach ($logs as $log) {
         if (!$login && $log['start_time']) {
             $login = $log['start_time'];
         }
         if ($log['end_time']) {
-            $logout = $log['end_time']; // last non-null end_time
+            $logout = $log['end_time'];
         }
     }
 
-
-    // Compute total time
     $totalTime = ($logout) ? strtotime($logout) - strtotime($login) : 0;
-    $totalDurSeconds += $totalTime;
+    $mtdDurations['total'] += $totalTime;
 
-    // Grouped durations
     $durations = [
         'production' => 0,
         'offphone' => 0,
@@ -98,19 +149,17 @@ foreach ($dailyLogs as $date => $logs) {
         } elseif (strpos($desc, 'offphone') !== false) {
             $durations['offphone'] += $duration;
         } elseif (strpos($desc, 'away - break') !== false) {
-            if ($duration <= 1800) {
-                $durations['paid_break'] += $duration;
-            } elseif ($duration <= 3600) {
-                $durations['unpaid_break'] += $duration;
-            } else {
-                $durations['personal_time'] += $duration;
-            }
+            allocateAwayBreakDuration($duration, $durations, $usedPaidBreak, $usedUnpaidBreak);
         } else {
-            // Default to production if none matched and work_mode_id == 1
             if ($workModeId == 1) {
                 $durations['production'] += $duration;
             }
         }
+    }
+
+    // Add to MTD
+    foreach ($durations as $key => $val) {
+        $mtdDurations[$key] += $val;
     }
 
     $summary[] = [
@@ -128,11 +177,18 @@ foreach ($dailyLogs as $date => $logs) {
     ];
 }
 
+
+// Format MTD totals
+$mtdFormatted = [];
+foreach ($mtdDurations as $key => $seconds) {
+    $mtdFormatted[$key] = formatDuration($seconds);
+}
+
 // === Final JSON Response ===
 echo json_encode([
     'status' => 'success',
     'summary' => $summary,
-    'mtd' => formatDuration($totalDurSeconds)
+    'mtd' => $mtdFormatted
 ]);
 
 function formatDuration($seconds)
@@ -147,7 +203,7 @@ function getDescription($conn, $descId)
     static $descCache = [];
     if (isset($descCache[$descId])) return $descCache[$descId];
 
-    $stmt = $conn->prepare("SELECT description FROM task_descriptions WHERE id = ?");
+    $stmt = $conn->prepare("SELECT description FROM task_descriptions WHERE id = ? LIMIT 1");
     $stmt->bind_param("i", $descId);
     $stmt->execute();
     $res = $stmt->get_result();

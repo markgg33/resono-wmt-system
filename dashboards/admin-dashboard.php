@@ -1,6 +1,8 @@
 <?php
+
 session_start();
 require_once "../backend/connection_db.php"; // Adjust path if needed
+
 
 // Check if user is logged in and has an authorized role
 $allowedRoles = ['admin', 'hr', 'executive'];
@@ -40,11 +42,15 @@ $loggedInUserRole = $_SESSION['role'];
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
 </head>
 
 <body>
 
     <div class="grid-container">
+
+        <!---SIDEBAR--->
         <aside id="rsn-sidebar">
             <div class="logout-container">
                 <img src="../assets/RESONO_logo_edited.png" width="100px" alt="">
@@ -65,21 +71,37 @@ $loggedInUserRole = $_SESSION['role'];
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="generalSubmenu">
                         <li class="sidebar-list-item" data-page="my-tracker" onclick="changePage('my-tracker')">My Tracker</li>
                         <li class="sidebar-list-item" data-page="monthly-summary" onclick="changePage('monthly-summary')">Monthly Summary</li>
-                        <li class="sidebar-list-item" data-page="dtr-amendment" onclick="changePage('dtr-amendment')">DTR Amendment</li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a class="sidebar-dropdown d-flex justify-content-between align-items-center"
+                        data-bs-toggle="collapse"
+                        href="#dtrAmendmentSubmenu"
+                        role="button"
+                        aria-expanded="false"
+                        aria-controls="dtrAmendmentSubmenu">
+                        <span><i class="fa-solid fa-pen-to-square"></i>DTR AMENDMENT</span>
+                        <i class="fa-solid fa-caret-down"></i>
+                    </a>
+
+                    <ul class="collapse sidebar-submenu list-unstyled ps-3" id="dtrAmendmentSubmenu">
+                        <li class="sidebar-list-item" data-page="dtr-amendment" onclick="changePage('dtr-amendment')">Requests</li>
+                        <li class="sidebar-list-item" data-page="dtr-amendment-archive" onclick="changePage('dtr-amendment-archive')">Archive</li>
                     </ul>
                 </li>
 
                 <!----USER MANAGEMENT---->
                 <li>
                     <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#userManagementmenu" role="button" aria-expanded="false" aria-controls="userManagementmenu">
-                        <span><i class="fa-solid fa-gear"></i>USER MANAGEMENT</span>
+                        <span><i class="fa-solid fa-user"></i>USER MANAGEMENT</span>
                         <i class="fa-solid fa-caret-down"></i>
                     </a>
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="userManagementmenu">
 
                         <li class="sidebar-list-item" data-page="add-users" onclick="changePage('add-users')">Add Users</li>
-                        <li class="sidebar-list-item" data-page="edit-profile" onclick="changePage('edit-profile')">Edit Profile</li>
+                        <li class="sidebar-list-item" data-page="users-list" onclick="changePage('users-list')">Users list</li>
                     </ul>
                 </li>
                 <!----USER MANAGEMENT END---->
@@ -93,6 +115,8 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="systemSettingsmenu">
                         <li class="sidebar-list-item" data-page="create-work-mode" onclick="changePage('create-work-mode')">Create Work Mode</li>
+                        <li class="sidebar-list-item" data-page="archive" onclick="changePage('archive')">Archives</li>
+                        <li class="sidebar-list-item" data-page="edit-profile" onclick="changePage('edit-profile')">Edit Profile</li>
                     </ul>
                 </li>
                 <!----SYSTEM SETTINGS END---->
@@ -145,6 +169,7 @@ $loggedInUserRole = $_SESSION['role'];
                                         <th>End Time</th>
                                         <th>Total Time Spent</th>
                                         <th>Remarks</th>
+                                        <th style="width: 120px;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -170,6 +195,8 @@ $loggedInUserRole = $_SESSION['role'];
                                 <label for="employee_id" class="form-label">Employee ID (Optional)</label>
                                 <input type="text" class="form-control" id="employee_id" name="employee_id" placeholder="e.g. 2024-0012">
                             </div>
+                        </div>
+                        <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="first_name" class="form-label">First Name <span style="color:red;">*</span></label>
                                 <input type="text" class="form-control" id="first_name" name="first_name" required>
@@ -178,7 +205,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 <label for="middle_name" class="form-label">Middle Name</label>
                                 <input type="text" class="form-control" id="middle_name" name="middle_name">
                             </div>
-                            <div class="col-md-4 mt-3">
+                            <div class="col-md-4">
                                 <label for="last_name" class="form-label">Last Name <span style="color:red;">*</span></label>
                                 <input type="text" class="form-control" id="last_name" name="last_name" required>
                             </div>
@@ -191,7 +218,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="password" name="password" placeholder="••••••" required>
                                     <span class="input-group-text toggle-password" onclick="togglePassword('password')">
-                                        <i class="fa-solid fa-eye"></i>
+                                        <i class="fa-solid fa-eye-slash"></i>
                                     </span>
                                 </div>
 
@@ -204,6 +231,7 @@ $loggedInUserRole = $_SESSION['role'];
                                     <option value="executive">Executive</option>
                                     <option value="hr">HR</option>
                                     <option value="user">User</option>
+                                    <option value="client">Client</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mt-3" id="departmentField" style="display: none;">
@@ -220,6 +248,40 @@ $loggedInUserRole = $_SESSION['role'];
 
                 <?php include "../modals/success-modal.php"; ?>
 
+            </div>
+
+            <!-- USERS LIST PAGE -->
+            <div id="users-list-page" class="page-content">
+                <div class="main-title">
+                    <h1>USERS LIST</h1>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="departmentFilter" class="form-label">Filter by Department:</label>
+                        <select id="departmentFilter" class="form-select">
+                            <option value="0">All Departments</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="table-responsive">
+                    <table id="usersTable" class="table table-striped table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Department</th>
+                                <th scope="col">Role</th>
+                                <th scope="col" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic rows will be injected here by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!---CREATE WORK MODE PAGE--->
@@ -314,16 +376,22 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
 
                 <div class="filters mb-3 row g-2">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <input type="text" id="searchUser" placeholder="Search User" class="form-control" />
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <input type="month" id="monthFilter" class="form-control" />
                     </div>
                     <div class="col-md-3">
-                        <button class="btn btn-primary w-100" onclick="searchUsers()">Search</button>
+                        <select class="form-select" id="summaryDepartmentFilter">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-success w-100" onclick="searchUsers()">Search</button>
                     </div>
                 </div>
+
 
                 <!-- Search Result List -->
                 <div id="searchResults" class="my-3"></div>
@@ -349,10 +417,189 @@ $loggedInUserRole = $_SESSION['role'];
                         <tbody></tbody>
                     </table>
                 </div>
+                <!-- Export Button -->
+                <div class="text-end mt-3">
+                    <button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
+                        📄 Export to PDF
+                    </button>
+                    <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
+                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department (ZIP)</button>
+                </div>
             </div>
 
-        </div>
+            <!---EDIT PROFILE USER--->
+            <div id="edit-profile-page" class="page-content">
+                <div class="main-title">
+                    <h1>EDIT PROFILE</h1>
+                </div>
 
+                <div class="profile-card">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileInfo" type="button" role="tab">Profile Info</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#changePassword" type="button" role="tab">Change Password</button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content p-3" id="profileTabsContent">
+
+                        <!-- Profile Info Tab -->
+                        <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
+                            <form id="updateProfileForm" class="modern-form">
+                                <div class="form-group">
+                                    <label>Employee ID</label>
+                                    <input type="text" id="edit_employee_id" class="form-control-modern">
+                                </div>
+                                <div class="form-group">
+                                    <label>First Name</label>
+                                    <input type="text" id="edit_first_name" class="form-control-modern" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Middle Name</label>
+                                    <input type="text" id="edit_middle_name" class="form-control-modern">
+                                </div>
+                                <div class="form-group">
+                                    <label>Last Name</label>
+                                    <input type="text" id="edit_last_name" class="form-control-modern" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="edit_email" class="form-control-modern" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Role</label>
+                                    <input type="text" id="edit_role" class="form-control-modern" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <input type="text" id="edit_department" class="form-control-modern" disabled>
+                                </div>
+                                <button type="submit" class="btn-modern btn-primary-modern">Update Profile</button>
+                            </form>
+                            <div id="profileMessage" class="mt-2"></div>
+                        </div>
+
+                        <!-- Change Password Tab -->
+                        <div class="tab-pane fade" id="changePassword" role="tabpanel">
+                            <form id="changePasswordForm" class="modern-form">
+
+                                <div class="form-group password-group">
+                                    <label>Current Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="current_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('current_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group password-group">
+                                    <label>New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="new_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('new_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group password-group">
+                                    <label>Confirm New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="confirm_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('confirm_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn-modern btn-warning-modern">Change Password</button>
+                            </form>
+                            <div id="passwordMessage" class="mt-2"></div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+
+            <!---ADMIN DTR AMENDMENT USER--->
+            <div id="dtr-amendment-page" class="page-content">
+                <div class="main-title">
+                    <h1>DTR AMENDMENT REQUESTS</h1>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Request UID</th>
+                            <th>Requestor</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-amendments-table"> <!-- Filled by JS --> </tbody>
+                </table>
+            </div>
+
+            <!-- ADMIN DTR AMENDMENT ARCHIVE -->
+            <div id="dtr-amendment-archive-page" class="page-content">
+                <div class="main-title">
+                    <h1>APPROVED & REJECTED DTR REQUESTS</h1>
+                </div>
+                <table class="table table-striped table-hover">
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Requester</th>
+                        <th>Status</th>
+                        <th>Processed At</th>
+                        <th>Actions</th>
+                    </tr>
+                    <tbody id="admin-amendments-archive-table">
+                        <tr>
+                            <td colspan="6" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="archive-pagination" class="mt-3 text-center"></div>
+            </div>
+
+            <!---ARCHIVE PAGE--->
+            <div id="archive-page" class="page-content">
+                <div class="main-title d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h1>THE ARCHIVE</h1>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="archiveYear" class="form-select w-auto"></select>
+                        <select id="archiveMonth" class="form-select w-auto"></select>
+                        <button id="archiveFilterBtn" class="btn btn-success">Filter</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-3">
+                    <table class="table table-bordered text-center" id="archiveLogTable">
+                        <thead class="table">
+                            <tr>
+                                <th>Date</th>
+                                <th>Work Mode</th>
+                                <th>Task Description</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Total Time Spent</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- rows go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
     </div>
 
 
@@ -366,9 +613,15 @@ $loggedInUserRole = $_SESSION['role'];
         </div>
     </div>
 
+    <!---PHP MODAL--->
+    <?php include "../modals/edit-task-modal.php"; ?>
+    <?php include "../modals/admin-amendment-modal.php"; ?>
+    <?php include "../modals/user-amendment-modal.php"; ?>
+    <?php include "../modals/admin-user-profile-modal.php"; ?>
 
 
     <!---JS LINKS HERE--->
+    <script src="../js/edit-profile.js"></script>
     <script src="../js/start-tag-task.js"></script>
     <script src="../js/slider-function.js"></script>
     <script src="../js/create-work-mode.js"></script>
@@ -376,8 +629,16 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/toggle-department.js"></script>
     <script src="../js/sidebar.js"></script>
     <script src="../js/real-time-clock.js"></script>
-    <script src="../js/js-modals/user-added-modal.js"></script>
     <script src="../js/toggle-password.js"></script>
+    <script src="../js/js-modals/user-added-modal.js"></script>
+    <script src="../js/tracker-edit-task.js"></script>
+    <script src="../js/admin-amendments.js"></script>
+    <script src="../js/user-amendments.js"></script>
+    <script src="../js/archive.js"></script>
+    <script src="../js/user-requests.js"></script>
+    <script src="../js/admin-amendments-archive.js"></script>
+    <script src="../js/users-list.js"></script>
+
 
 
     <script>

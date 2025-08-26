@@ -117,7 +117,7 @@ function addRemarksCell(row, taskId, initialRemarks = "") {
   cell.innerHTML = `
       <div class="d-flex gap-1 align-items-center">
         <input type="text" id="${inputId}" value="${initialRemarks}" class="form-control form-control-sm" data-task-id="${taskId}" />
-        <button class="btn btn-sm btn-success" id="${btnId}">Save</button>
+        <button class="btn btn-sm btn-success" id="${btnId}"><i class="fa-solid fa-floppy-disk"></i></button>
       </div>
     `;
 
@@ -142,6 +142,78 @@ function addRemarksCell(row, taskId, initialRemarks = "") {
   });
 }
 
+// ============================================
+// ========== ACTION BUTTONS CELL ===============
+// ============================================
+
+function addActionButtonsCell(row, log) {
+  const cell = row.insertCell(-1); // put at the end as "Actions"
+  cell.classList.add("text-center");
+
+  // Edit button
+  const editBtn = document.createElement("button");
+  editBtn.className = "btn btn-sm btn-warning me-1"; // spacing
+  editBtn.innerHTML = `<i class="fa-solid fa-pen-to-square"></i>`;
+  editBtn.addEventListener("click", () => {
+    openEditTaskLogModal(log.id, log.task_description);
+  });
+
+  // Amendment button
+  const amendBtn = document.createElement("button");
+  amendBtn.className = "btn btn-sm btn-success";
+  amendBtn.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i>`; // icon for amendment
+  amendBtn.addEventListener("click", () => {
+    // Fill modal fields with log details
+    document.getElementById("logId").value = log.id;
+    document.getElementById("amendDate").value = log.date
+      ? formatDateForDisplay(new Date(log.date))
+      : "--";
+
+    // Default: show current start_time in Old Value
+    document.getElementById("oldValue").value = ensureHHMMSS(log.start_time);
+
+    // Reset new value + reason
+    document.getElementById("newValue").value = "";
+    document.getElementById("reason").value = "";
+
+    // Handle "Field to Amend" dropdown changes
+    const fieldSelect = document.getElementById("field");
+    fieldSelect.onchange = () => {
+      switch (fieldSelect.value) {
+        case "start_time":
+          document.getElementById("oldValue").value = ensureHHMMSS(
+            log.start_time
+          );
+          document.getElementById("newValue").type = "time";
+          break;
+        case "end_time":
+          document.getElementById("oldValue").value = log.end_time
+            ? ensureHHMMSS(log.end_time)
+            : "--";
+          document.getElementById("newValue").type = "time";
+          break;
+        case "remarks":
+          document.getElementById("oldValue").value = log.remarks || "--";
+          document.getElementById("newValue").type = "text";
+          break;
+      }
+    };
+
+    // Default dropdown → set "start_time"
+    fieldSelect.value = "start_time";
+    document.getElementById("newValue").type = "time";
+
+    // Show modal
+    const modal = new bootstrap.Modal(
+      document.getElementById("userAmendmentModal")
+    );
+    modal.show();
+  });
+
+  // Append both buttons
+  cell.appendChild(editBtn);
+  cell.appendChild(amendBtn);
+}
 // ============================================
 // ========== START TASK LOGIC ===============
 // ============================================
@@ -172,48 +244,54 @@ function startTask() {
   const tableBody = document.querySelector("#wmtLogTable tbody");
 
   // Close previous task if still active
+  // Close previous task only if it's from the same date and still open
   if (
     lastTaskRow &&
     (!lastTaskRow.cells[4].textContent ||
       lastTaskRow.cells[4].textContent === "--")
   ) {
-    const prevStart = lastTaskRow.cells[3].textContent + ":00"; // add seconds back
-    const prevEnd = startTime;
-    const duration = calculateTimeSpent(prevStart, prevEnd);
+    const lastTaskDateText = lastTaskRow.cells[0].textContent;
+    const todayDisplayDate = formatDateForDisplay(new Date());
 
-    lastTaskRow.cells[4].textContent = prevEnd;
-    lastTaskRow.cells[5].textContent = duration;
-    lastTaskRow.classList.remove("active-task");
+    if (lastTaskDateText === todayDisplayDate) {
+      const prevStart = lastTaskRow.cells[3].textContent + ":00"; // add seconds back
+      const prevEnd = startTime;
+      const duration = calculateTimeSpent(prevStart, prevEnd);
 
-    const prevTaskId = lastTaskRow.dataset.taskId;
+      lastTaskRow.cells[4].textContent = prevEnd;
+      lastTaskRow.cells[5].textContent = duration;
+      lastTaskRow.classList.remove("active-task");
 
-    // Optionally update backend for old task
-    fetch("../backend/update_task_log.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: prevTaskId,
-        end_time: prevEnd,
-        duration: duration,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Update Task Response:", data); // <--- ADD THIS LINE
-      });
+      const prevTaskId = lastTaskRow.dataset.taskId;
+
+      // Optionally update backend for old task
+      fetch("../backend/update_task_log.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: prevTaskId,
+          end_time: prevEnd,
+          duration: duration,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Update Task Response:", data);
+        });
+    }
   }
 
   // Create new task row
   const newRow = document.createElement("tr");
   newRow.classList.add("active-task");
   newRow.innerHTML = `
-      <td>${displayDate}</td>
-      <td>${workModeSelect.options[workModeSelect.selectedIndex].text}</td>
-      <td>${taskSelect.options[taskSelect.selectedIndex].text}</td>
-      <td>${startTime}</td>
-      <td>--</td>
-      <td>--</td>
-    `;
+    <td>${displayDate}</td>
+    <td>${workModeSelect.options[workModeSelect.selectedIndex].text}</td>
+    <td>${taskSelect.options[taskSelect.selectedIndex].text}</td>
+    <td>${startTime}</td>
+    <td>--</td>
+    <td>--</td>
+`;
   tableBody.appendChild(newRow);
 
   fetch("../backend/insert_task_logs.php", {
@@ -230,23 +308,20 @@ function startTask() {
   })
     .then(async (res) => {
       const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        console.error("Invalid JSON from backend:", text);
-        alert(
-          "An unexpected server error occurred. Check console for details."
-        );
-        throw e;
-      }
+      return JSON.parse(text);
     })
-
     .then((data) => {
-      console.log("Backend response:", data);
-
-      if (data && data.status === "success") {
+      if (data.status === "success") {
         newRow.dataset.taskId = data.inserted_id;
         addRemarksCell(newRow, data.inserted_id, remarks);
+        addActionButtonsCell(newRow, {
+          id: data.inserted_id,
+          date: dbDate,
+          start_time: startTime,
+          end_time: null,
+          remarks: remarks,
+          task_description: taskSelect.options[taskSelect.selectedIndex].text,
+        });
         lastTaskRow = newRow;
       } else {
         alert("Error: " + (data?.message || "Unknown error"));
@@ -310,6 +385,8 @@ function loadExistingLogs() {
         }
 
         addRemarksCell(row, log.id, log.remarks || "");
+        //ONE CONTAINER FOR BOTH BUTTONS AMEND AND EDIT
+        addActionButtonsCell(row, log);
       });
     })
     .catch((err) => {

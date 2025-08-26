@@ -1,3 +1,5 @@
+//=====SEARCH USER FOR ADMIN===//
+
 let selectedUser = null;
 
 function searchUsers() {
@@ -51,23 +53,45 @@ function selectUser(userId, userName) {
   loadMonthlySummary();
 }
 
-function loadMonthlySummary() {
-  if (!selectedUser) return;
+function loadSummaryDepartments() {
+  fetch("../backend/get_departments.php")
+    .then((res) => res.json())
+    .then((depts) => {
+      let filterSelect = document.getElementById("summaryDepartmentFilter");
+      if (!filterSelect) return; // safety check
+      filterSelect.innerHTML = `<option value="">All Departments</option>`;
+      depts.forEach((d) => {
+        filterSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+      });
+    })
+    .catch((err) => console.error("Error loading summary departments:", err));
+}
 
+// Run this when the summary page is shown
+document.addEventListener("DOMContentLoaded", function () {
+  loadSummaryDepartments();
+});
+
+//=====LOAD MONTHLY SUMMARY FUNCTION===//
+
+function loadMonthlySummary() {
   const month =
     document.getElementById("monthFilter").value ||
     new Date().toISOString().slice(0, 7);
+
   const tableBody = document.querySelector("#summaryTable tbody");
   const tableWrapper = document.getElementById("summaryTableWrapper");
   tableWrapper.style.display = "block";
 
   const overlay = showLoadingOverlay();
 
-  fetch(
-    `../backend/get_monthly_summary.php?month=${month}&search=${encodeURIComponent(
-      selectedUser.name
-    )}`
-  )
+  // If admin selected a user, include it in the query
+  let url = `../backend/get_monthly_summary.php?month=${month}`;
+  if (typeof selectedUser !== "undefined" && selectedUser?.name) {
+    url += `&search=${encodeURIComponent(selectedUser.name)}`;
+  }
+
+  fetch(url)
     .then((res) => res.json())
     .then((data) => {
       tableBody.innerHTML = "";
@@ -79,7 +103,7 @@ function loadMonthlySummary() {
       }
 
       const summary = data.summary || [];
-      const mtd = data.mtd || "00:00";
+      const mtd = data.mtd || {};
 
       if (summary.length === 0) {
         const row = tableBody.insertRow();
@@ -108,18 +132,28 @@ function loadMonthlySummary() {
         row.insertCell(10).textContent = entry.personal_time || "00:00";
       });
 
+      // MTD Total Row
       const totalRow = tableBody.insertRow();
       totalRow.className = "table-success fw-bold";
       totalRow.insertCell(0).textContent = "MTD Total";
       totalRow.insertCell(1).textContent = "--";
       totalRow.insertCell(2).textContent = "--";
-      totalRow.insertCell(3).textContent = mtd;
-
-      for (let i = 4; i <= 10; i++) {
-        totalRow.insertCell(i).textContent = "--";
-      }
+      totalRow.insertCell(3).textContent = mtd.total || "00:00";
+      totalRow.insertCell(4).textContent = mtd.production || "00:00";
+      totalRow.insertCell(5).textContent = mtd.offphone || "00:00";
+      totalRow.insertCell(6).textContent = mtd.training || "00:00";
+      totalRow.insertCell(7).textContent = mtd.resono || "00:00";
+      totalRow.insertCell(8).textContent = mtd.paid_break || "00:00";
+      totalRow.insertCell(9).textContent = mtd.unpaid_break || "00:00";
+      totalRow.insertCell(10).textContent = mtd.personal_time || "00:00";
 
       hideLoadingOverlay(overlay);
+
+      // Show Export Button after data loads
+      document.getElementById("exportPDFBtn").style.display = "inline-block";
+      document.getElementById("exportCSVBtn").style.display = "inline-block";
+      /*document.getElementById("exportDeptCSVBtn").style.display =
+        "inline-block";*/
     })
     .catch((err) => {
       console.error("Error loading monthly summary:", err);
@@ -168,4 +202,117 @@ function hideLoadingOverlay(overlay) {
       overlay.parentNode.removeChild(overlay);
     }
   }, 500); // slightly longer delay for smoother UX
+}
+
+// === EXPORT TO CSV (Individual) ===
+document.getElementById("exportCSVBtn").addEventListener("click", () => {
+  if (!selectedUser) {
+    alert("Please select a user first.");
+    return;
+  }
+  const month =
+    document.getElementById("monthFilter").value ||
+    new Date().toISOString().slice(0, 7);
+  fetch(
+    `../backend/export_mtd_csv.php?user_id=${selectedUser.id}&month=${month}`
+  )
+    .then((res) => res.blob())
+    .then((blob) => {
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `MTD_${selectedUser.name}_${month}.csv`;
+      link.click();
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Error exporting CSV.");
+    });
+});
+
+// === EXPORT DEPARTMENT MTD (ZIP of CSVs) ===
+document.getElementById("exportDeptCSVBtn").addEventListener("click", () => {
+  const deptId = document.getElementById("summaryDepartmentFilter").value;
+  const month =
+    document.getElementById("monthFilter").value ||
+    new Date().toISOString().slice(0, 7);
+
+  if (!deptId || !month) {
+    alert("Please select both a department and a month before exporting.");
+    return;
+  }
+
+  fetch(
+    `../backend/export_department_zip.php?department=${deptId}&month=${month}`
+  )
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to export department ZIP");
+      return res.blob();
+    })
+    .then((blob) => {
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `Department_${deptId}_MTD_${month}.zip`;
+      link.click();
+    })
+    .catch((err) => {
+      console.error("Error exporting department ZIP:", err);
+      alert("Error exporting Department CSVs.");
+    });
+});
+
+// === EXPORT TO PDF ===
+document.addEventListener("DOMContentLoaded", () => {
+  const exportBtn = document.getElementById("exportPDFBtn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      exportMonthlySummaryToPDF();
+    });
+  }
+});
+
+function exportMonthlySummaryToPDF() {
+  const month =
+    document.getElementById("monthFilter").value ||
+    new Date().toISOString().slice(0, 7);
+
+  const userName = selectedUser?.name || loggedInUserName || "Myself";
+  const summaryTable = document.getElementById("summaryTable");
+
+  // === Create custom content wrapper for PDF ===
+  const pdfContent = document.createElement("div");
+  pdfContent.style.fontFamily = "Arial, sans-serif";
+  pdfContent.style.padding = "20px";
+
+  pdfContent.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <img src="../assets/RESONO_logo_edited.png" alt="Company Logo" style="text-align:center; height: 60px; margin-bottom: 10px;" />
+      <h2 style=" text-align:center; margin: 5px 0;">Monthly Summary Report</h2>
+      <p style="margin: 0;"><strong>User:</strong> ${userName}</p>
+      <p style="margin: 0;"><strong>Month:</strong> ${month}</p>
+    </div>
+    <div>${summaryTable.outerHTML}</div>
+    <div style="margin-top: 30px; text-align: center; font-size: 12px; color: gray;">
+      Generated on ${new Date().toLocaleString()}
+    </div>
+  `;
+
+  // === PDF Options ===
+  const opt = {
+    margin: 0.5,
+    filename: `Monthly_Summary_${userName}_${month}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "a4", orientation: "landscape" },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(pdfContent)
+    .toPdf()
+    .get("pdf")
+    .then(function (pdf) {
+      const blob = pdf.output("blob");
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank"); // Open in new tab
+    });
 }

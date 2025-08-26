@@ -5,9 +5,9 @@ function togglePassword(fieldId) {
   
     if (field.type === "password") {
       field.type = "text";
-      icon.classList.replace("fa-eye", "fa-eye-slash");
+      icon.classList.replace("fa-eye-slash", "fa-eye");
     } else {
       field.type = "password";
-      icon.classList.replace("fa-eye-slash", "fa-eye");
+      icon.classList.replace("fa-eye", "fa-eye-slash");
     }
   }

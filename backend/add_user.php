@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $role = $_POST['role'];
-    $department_id = ($role === 'user' || $role === 'admin') ? ($_POST['department_id'] ?? null) : null;
+    $department_id = ($role === 'user') ? ($_POST['department_id'] ?? null) : null;
 
 
     if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($role)) {
