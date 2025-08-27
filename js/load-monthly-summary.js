@@ -150,10 +150,13 @@ function loadMonthlySummary() {
       hideLoadingOverlay(overlay);
 
       // Show Export Button after data loads
-      document.getElementById("exportPDFBtn").style.display = "inline-block";
-      document.getElementById("exportCSVBtn").style.display = "inline-block";
-      /*document.getElementById("exportDeptCSVBtn").style.display =
-        "inline-block";*/
+      const exportPDFBtn = document.getElementById("exportPDFBtn");
+      const exportCSVBtn = document.getElementById("exportCSVBtn");
+      const exportDeptCSVBtn = document.getElementById("exportDeptCSVBtn");
+
+      if (exportPDFBtn) exportPDFBtn.style.display = "inline-block";
+      if (exportCSVBtn) exportCSVBtn.style.display = "inline-block";
+      if (exportDeptCSVBtn) exportDeptCSVBtn.style.display = "inline-block";
     })
     .catch((err) => {
       console.error("Error loading monthly summary:", err);
@@ -205,60 +208,66 @@ function hideLoadingOverlay(overlay) {
 }
 
 // === EXPORT TO CSV (Individual) ===
-document.getElementById("exportCSVBtn").addEventListener("click", () => {
-  if (!selectedUser) {
-    alert("Please select a user first.");
-    return;
-  }
-  const month =
-    document.getElementById("monthFilter").value ||
-    new Date().toISOString().slice(0, 7);
-  fetch(
-    `../backend/export_mtd_csv.php?user_id=${selectedUser.id}&month=${month}`
-  )
-    .then((res) => res.blob())
-    .then((blob) => {
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `MTD_${selectedUser.name}_${month}.csv`;
-      link.click();
-    })
-    .catch((err) => {
-      console.error(err);
-      alert("Error exporting CSV.");
-    });
-});
+const exportCSVBtn = document.getElementById("exportCSVBtn");
+if (exportCSVBtn) {
+  exportCSVBtn.addEventListener("click", () => {
+    if (!selectedUser) {
+      alert("Please select a user first.");
+      return;
+    }
+    const month =
+      document.getElementById("monthFilter").value ||
+      new Date().toISOString().slice(0, 7);
+    fetch(
+      `../backend/export_mtd_csv.php?user_id=${selectedUser.id}&month=${month}`
+    )
+      .then((res) => res.blob())
+      .then((blob) => {
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `MTD_${selectedUser.name}_${month}.csv`;
+        link.click();
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Error exporting CSV.");
+      });
+  });
+}
 
 // === EXPORT DEPARTMENT MTD (ZIP of CSVs) ===
-document.getElementById("exportDeptCSVBtn").addEventListener("click", () => {
-  const deptId = document.getElementById("summaryDepartmentFilter").value;
-  const month =
-    document.getElementById("monthFilter").value ||
-    new Date().toISOString().slice(0, 7);
+const exportDeptCSVBtn = document.getElementById("exportDeptCSVBtn");
+if (exportDeptCSVBtn) {
+  exportDeptCSVBtn.addEventListener("click", () => {
+    const deptId = document.getElementById("summaryDepartmentFilter").value;
+    const month =
+      document.getElementById("monthFilter").value ||
+      new Date().toISOString().slice(0, 7);
 
-  if (!deptId || !month) {
-    alert("Please select both a department and a month before exporting.");
-    return;
-  }
+    if (!deptId || !month) {
+      alert("Please select both a department and a month before exporting.");
+      return;
+    }
 
-  fetch(
-    `../backend/export_department_zip.php?department=${deptId}&month=${month}`
-  )
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to export department ZIP");
-      return res.blob();
-    })
-    .then((blob) => {
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Department_${deptId}_MTD_${month}.zip`;
-      link.click();
-    })
-    .catch((err) => {
-      console.error("Error exporting department ZIP:", err);
-      alert("Error exporting Department CSVs.");
-    });
-});
+    fetch(
+      `../backend/export_department_zip.php?department=${deptId}&month=${month}`
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to export department ZIP");
+        return res.blob();
+      })
+      .then((blob) => {
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `Department_${deptId}_MTD_${month}.zip`;
+        link.click();
+      })
+      .catch((err) => {
+        console.error("Error exporting department ZIP:", err);
+        alert("Error exporting Department CSVs.");
+      });
+  });
+}
 
 // === EXPORT TO PDF ===
 document.addEventListener("DOMContentLoaded", () => {

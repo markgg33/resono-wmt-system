@@ -1,4 +1,4 @@
-<?php
+ <?php
 // export_mtd_csv_internal.php
 // Provides: function generate_mtd_csv($conn, $userId, $monthStart, $monthEnd)
 // Returns: ['csv' => $csvString, 'user_name' => $userName, 'department' => $department]
