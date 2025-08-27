@@ -322,7 +322,9 @@ $loggedInUserRole = $_SESSION['role'];
                             <th>Reason</th>
                             <th>Recipient</th>
                             <th>Status</th>
+                            <th>Processed By</th>
                             <th>Requested At</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="user-amendments-table">
@@ -378,6 +380,7 @@ $loggedInUserRole = $_SESSION['role'];
     <!---PHP MODAL--->
     <?php include "../modals/edit-task-modal.php"; ?>
     <?php include "../modals/user-amendment-modal.php"; ?>
+    <?php include "../modals/edit-request-modal.php"; ?>
 
     <!---JS LINKS HERE--->
     <script src="../js/start-tag-task.js"></script>
@@ -394,6 +397,8 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/edit-profile.js"></script>
     <script src="../js/user-requests.js"></script>
     <script src="../js/archive.js"></script>
+    <script src="../js/js-modals/edit-request-modal.js"></script>
+
 
 
     <script>

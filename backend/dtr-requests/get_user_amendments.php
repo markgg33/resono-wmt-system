@@ -11,17 +11,23 @@ if (!$userId) {
 
 $query = "
   SELECT da.id, da.request_uid, da.field, da.old_value, da.new_value, da.status, da.reason, da.requested_at,
+         da.processed_at,
          tl.date, td.description AS task_description,
          u.id AS recipient_id,
          CONCAT(u.first_name, ' ', u.last_name) AS recipient_name,
-         u.role AS recipient_role
+         u.role AS recipient_role,
+         p.id AS processed_by_id,
+         CONCAT(p.first_name, ' ', p.last_name) AS processed_by_name,
+         p.role AS processed_by_role
   FROM dtr_amendments da
   JOIN task_logs tl ON da.log_id = tl.id
   JOIN task_descriptions td ON tl.task_description_id = td.id
   LEFT JOIN users u ON da.recipient_id = u.id
+  LEFT JOIN users p ON da.processed_by = p.id
   WHERE da.user_id = ?
   ORDER BY da.id DESC
 ";
+
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userId);

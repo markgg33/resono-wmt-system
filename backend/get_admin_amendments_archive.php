@@ -27,18 +27,19 @@ $totalPages = ceil($totalRows / $limit);
 
 // Main query
 $query = "
-  SELECT da.id, da.request_uid, da.field, da.old_value, da.new_value, da.status, da.reason, da.requested_at,
-         da.processed_by, da.processed_at,
-         u.id AS requester_id,
-         CONCAT(u.first_name, ' ', u.last_name) AS requester_name,
-         tl.date, tl.start_time, tl.end_time, tl.total_duration,
-         td.description AS task_description
+  SELECT da.id, da.request_uid, da.field, da.old_value, da.new_value, da.status,
+         da.reason, da.requested_at, da.processed_at,
+         tl.date, td.description AS task_description,
+         CONCAT(reqUser.first_name, ' ', reqUser.last_name) AS requester_name,
+         CONCAT(procUser.first_name, ' ', procUser.last_name) AS processed_by_name,
+         procUser.role AS processed_by_role
   FROM dtr_amendments da
-  JOIN users u ON da.user_id = u.id
   JOIN task_logs tl ON da.log_id = tl.id
-  LEFT JOIN task_descriptions td ON tl.task_description_id = td.id
-  WHERE da.status IN ('approved', 'rejected')
-  ORDER BY da.id DESC
+  JOIN task_descriptions td ON tl.task_description_id = td.id
+  JOIN users reqUser ON da.user_id = reqUser.id
+  LEFT JOIN users procUser ON da.processed_by = procUser.id
+  WHERE da.status IN ('Approved', 'Rejected')
+  ORDER BY da.processed_at DESC
   LIMIT $limit OFFSET $offset
 ";
 

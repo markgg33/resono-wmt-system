@@ -6,16 +6,21 @@ function openArchiveAmendmentModal(requestId) {
       if (!req) return;
 
       document.getElementById("amendmentModalBody").innerHTML = `
-        <p><b>Requester:</b> ${req.requester_name}</p>
-        <p><b>Task:</b> ${req.task_description}</p>
-        <p><b>Date:</b> ${req.date}</p>
-        <p><b>Requested Field:</b> ${req.field}</p>
-        <p><b>Old Value:</b> ${req.old_value}</p>
-        <p><b>New Value:</b> ${req.new_value}</p>
-        <p><b>Reason:</b> ${req.reason}</p>
-        <p><b>Status:</b> ${req.status}</p>
-        <p><b>Processed At:</b> ${req.processed_at ?? "-"}</p>
-      `;
+  <p><b>Requester:</b> ${req.requester_name}</p>
+  <p><b>Task:</b> ${req.task_description}</p>
+  <p><b>Date:</b> ${req.date}</p>
+  <p><b>Requested Field:</b> ${req.field}</p>
+  <p><b>Old Value:</b> ${req.old_value}</p>
+  <p><b>New Value:</b> ${req.new_value}</p>
+  <p><b>Reason:</b> ${req.reason}</p>
+  <p><b>Status:</b> ${req.status}</p>
+  <p><b>Processed At:</b> ${req.processed_at ?? "-"}</p>
+  <p><b>Processed By:</b> ${
+    req.processed_by_name
+      ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
+      : "-"
+  }</p>
+`;
 
       // Hide decision buttons (archive = read only)
       document.getElementById("approveBtn").style.display = "none";
@@ -63,24 +68,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
     requests.forEach((req) => {
       const row = `
-        <tr>
-          <td><span class="badge bg-success">${req.request_uid}</span></td>
-          <td>${req.requester_name}</td>
-          <td>
-            <span class="badge ${
-              req.status === "Approved" ? "bg-success" : "bg-danger"
-            }">
-              ${req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-            </span>
-          </td>
-          <td>${req.processed_at ? req.processed_at : "-"}</td>
-          <td>
-                <button class="btn btn-sm btn-success" onclick="openArchiveAmendmentModal(${
-                  req.id
-                })">View</button>
-              </td>
-        </tr>
-      `;
+  <tr>
+    <td><span class="badge bg-success">${req.request_uid}</span></td>
+    <td>${req.requester_name}</td>
+    <td>
+      <span class="badge ${
+        req.status === "Approved" ? "bg-success" : "bg-danger"
+      }">
+        ${req.status}
+      </span>
+    </td>
+    <td>${req.processed_at ? req.processed_at : "-"}</td>
+    <td>${
+      req.processed_by_name
+        ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
+        : "-"
+    }</td>
+    <td>
+      <button class="btn btn-sm btn-success" onclick="openArchiveAmendmentModal(${
+        req.id
+      })">View</button>
+    </td>
+  </tr>
+`;
+
       tableBody.insertAdjacentHTML("beforeend", row);
     });
   }

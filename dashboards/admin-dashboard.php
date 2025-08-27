@@ -556,6 +556,7 @@ $loggedInUserRole = $_SESSION['role'];
                         <th>Requester</th>
                         <th>Status</th>
                         <th>Processed At</th>
+                        <th>Processed By</th>
                         <th>Actions</th>
                     </tr>
                     <tbody id="admin-amendments-archive-table">
