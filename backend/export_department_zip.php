@@ -2,16 +2,29 @@
 require_once "connection_db.php";
 require_once __DIR__ . "/export_mtd_csv_internal.php";
 
-if (!isset($_GET['department']) || !isset($_GET['month'])) {
+// === Input validation ===
+if (!isset($_GET['department'])) {
     http_response_code(400);
-    echo "Missing parameters.";
+    echo "Missing department.";
     exit;
 }
 
 $deptId = intval($_GET['department']);
-$month = $_GET['month']; // YYYY-MM
-$monthStart = "$month-01";
-$monthEnd   = date("Y-m-t", strtotime($monthStart));
+
+// Accept either ?month=YYYY-MM OR ?start&end
+if (!empty($_GET['month'])) {
+    $month = $_GET['month'];
+    $monthStart = "$month-01";
+    $monthEnd   = date("Y-m-t", strtotime($monthStart));
+} elseif (!empty($_GET['start']) && !empty($_GET['end'])) {
+    $monthStart = $_GET['start'];
+    $monthEnd   = $_GET['end'];
+    $month      = substr($monthStart, 0, 7) . "_to_" . substr($monthEnd, 0, 7);
+} else {
+    http_response_code(400);
+    echo "Missing parameters: provide either month or start+end.";
+    exit;
+}
 
 // get department name
 $dstmt = $conn->prepare("SELECT name FROM departments WHERE id = ? LIMIT 1");
@@ -27,7 +40,7 @@ if (!$drow) {
 }
 $deptName = $drow['name'];
 
-// get users in department
+// get users
 $ustmt = $conn->prepare("SELECT id, first_name, middle_name, last_name FROM users WHERE department_id = ?");
 $ustmt->bind_param("i", $deptId);
 $ustmt->execute();
@@ -54,12 +67,10 @@ foreach ($users as $user) {
     $nameParts = trim($user['first_name'] . ' ' . ($user['middle_name'] ?? '') . ' ' . $user['last_name']);
     $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $nameParts);
 
-    // generate CSV for this user
     $gen = generate_mtd_csv($conn, $userId, $monthStart, $monthEnd);
     $csvContent = $gen['csv'] ?? '';
-    // If CSV empty, still add a small placeholder CSV so user appears in ZIP
     if ($csvContent === '') {
-        $csvContent = "User,{$nameParts}\nDepartment,\n\nNo data for selected month.\n";
+        $csvContent = "User,{$nameParts}\nDepartment,\n\nNo data for selected period.\n";
     }
     $zip->addFromString("{$safeName}_{$month}.csv", $csvContent);
 }
@@ -74,5 +85,3 @@ header('Content-Type: application/zip');
 header("Content-Disposition: attachment; filename=\"{$downloadName}\"");
 header('Content-Length: ' . filesize($zipFile));
 readfile($zipFile);
-@unlink($zipFile);
-exit;

@@ -61,7 +61,7 @@ function openAmendmentModal(requestId) {
 }
 
 function loadAmendments() {
-  fetch("../backend/dtr-requests/get_admin_amendments.php")
+  fetch("../backend/dtr-requests/get_dtr_requests.php")
     .then((res) => res.json())
     .then((data) => {
       if (data.status === "success") {

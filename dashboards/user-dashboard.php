@@ -39,6 +39,8 @@ $loggedInUserRole = $_SESSION['role'];
     <!---SESSION STORAGE--->
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
+        sessionStorage.setItem("userRole", "<?php echo $_SESSION['role']; ?>");
+        const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
         const loggedInUserName = "<?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Guest'; ?>";
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
@@ -47,6 +49,8 @@ $loggedInUserRole = $_SESSION['role'];
 <body>
 
     <div class="grid-container">
+
+        <!---SIDEBAR--->
         <aside id="rsn-sidebar">
             <div class="logout-container">
                 <img src="../assets/RESONO_logo_edited.png" width="100px" alt="">
@@ -340,7 +344,7 @@ $loggedInUserRole = $_SESSION['role'];
                     <div class="d-flex align-items-center gap-2">
                         <select id="archiveYear" class="form-select w-auto"></select>
                         <select id="archiveMonth" class="form-select w-auto"></select>
-                        <button id="archiveFilterBtn" class="btn btn-primary">Filter</button>
+                        <button id="archiveFilterBtn" class="btn btn-success">Filter</button>
                     </div>
                 </div>
 
@@ -397,7 +401,7 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/edit-profile.js"></script>
     <script src="../js/user-requests.js"></script>
     <script src="../js/archive.js"></script>
-    <script src="../js/js-modals/edit-request-modal.js"></script>
+    <script src="../js/user-request-render.js"></script>
 
 
 

@@ -48,17 +48,6 @@ function loadUserAmendments() {
         const oldValFormatted = formatTo12Hour(req.old_value);
         const newValFormatted = formatTo12Hour(req.new_value);
 
-        const actionBtn =
-          req.status === "Pending"
-            ? `<button class="btn btn-sm btn-success edit-request-btn" 
-                  data-id="${req.id}" 
-                  data-field="${req.field}" 
-                  data-newvalue="${req.new_value}" 
-                  data-reason="${req.reason}">
-            Edit
-         </button>`
-            : "-";
-
         table.append(`
           <tr>
             <td><span class="badge bg-success">${req.request_uid}</span></td>
@@ -85,7 +74,6 @@ function loadUserAmendments() {
                 : "-"
             }</td>
             <td>${req.requested_at || "-"}</td>
-            <td>${actionBtn}</td>
           </tr>
         `);
       });

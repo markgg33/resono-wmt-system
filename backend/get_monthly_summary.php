@@ -7,7 +7,6 @@ $userId = $_SESSION['user_id'] ?? null;
 $role = $_SESSION['role'] ?? '';
 $canSearchOthers = in_array($role, ['admin', 'hr', 'executive']);
 
-$month = $_GET['month'] ?? date('Y-m');
 $search = $_GET['search'] ?? '';
 
 if (!$userId) {
@@ -15,10 +14,17 @@ if (!$userId) {
     exit;
 }
 
-$monthStart = "$month-01";
-$monthEnd = date("Y-m-t", strtotime($monthStart));
+// 🔹 Handle date range (for admin/hr/executive) OR month filter (regular users)
+if (isset($_GET['start'], $_GET['end']) && $canSearchOthers) {
+    $monthStart = $_GET['start'];
+    $monthEnd = $_GET['end'];
+} else {
+    $month = $_GET['month'] ?? date('Y-m');
+    $monthStart = "$month-01";
+    $monthEnd = date("Y-m-t", strtotime($monthStart));
+}
 
-// Determine target user
+// 🔹 Determine target user
 if ($canSearchOthers && $search !== '') {
     $stmt = $conn->prepare("SELECT id FROM users WHERE CONCAT(first_name, ' ', last_name) LIKE CONCAT('%', ?, '%') LIMIT 1");
     $stmt->bind_param("s", $search);
@@ -101,15 +107,12 @@ function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$us
     }
 }
 
-
-
 foreach ($dailyLogs as $date => $logs) {
     $login = null;
     $logout = null;
     // Track break usage per day
     $usedPaidBreak = 0;
-    $usedUnpaidBreak = 0; // 🔹 new tracker
-
+    $usedUnpaidBreak = 0;
 
     // Compute login/logout
     foreach ($logs as $log) {
@@ -176,7 +179,6 @@ foreach ($dailyLogs as $date => $logs) {
         'personal_time' => formatDuration($durations['personal_time']),
     ];
 }
-
 
 // Format MTD totals
 $mtdFormatted = [];

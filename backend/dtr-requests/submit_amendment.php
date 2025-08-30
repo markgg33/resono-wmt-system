@@ -9,40 +9,27 @@ if (!$userId) {
     exit;
 }
 
-$logId = $_POST['log_id'] ?? null;
-$field = $_POST['field'] ?? null;
-$oldValue = $_POST['old_value'] ?? null;
-$newValue = $_POST['new_value'] ?? null;
-$reason = $_POST['reason'] ?? null;
-$recipientId = $_POST['recipient_id'] ?? ($POST['recipient']) ?? null;
+$logId       = $_POST['log_id'] ?? null;
+$field       = $_POST['field'] ?? null;
+$oldValue    = $_POST['old_value'] ?? null;
+$newValue    = $_POST['new_value'] ?? null;
+$reason      = $_POST['reason'] ?? null;
+$recipientId = $_POST['recipient_id'] ?? null;
 
-if (!$logId || !$field || !$oldValue || !$newValue || !$reason) {
+if (!$logId || !$field || !$oldValue || !$newValue || !$reason || !$recipientId) {
     echo json_encode(["status" => "error", "message" => "Missing fields"]);
     exit;
 }
 
-if (!$recipientId) {
-    echo json_encode(["status" => "error", "message" => "Recipient required"]);
-    exit;
-}
+// Generate unique request UID
+$requestUid = "REQ-" . strtoupper(bin2hex(random_bytes(6)));
 
-// Generate unique UID
-function generateRequestUid($length = 12)
-{
-    return strtoupper(bin2hex(random_bytes($length / 2)));
-}
-$requestUid = "REQ-" . generateRequestUid();
-
-// Insert into dtr_amendments table
-$stmt = $conn->prepare("
-    INSERT INTO dtr_amendments 
-    (request_uid, user_id, log_id, field, old_value, new_value, reason, recipient_id, status, requested_at) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
-");
+// Insert only once (actual recipient)
+$stmt = $conn->prepare("INSERT INTO dtr_amendments 
+    (request_uid, user_id, log_id, field, old_value, new_value, reason, recipient_id, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')");
 $stmt->bind_param("siissssi", $requestUid, $userId, $logId, $field, $oldValue, $newValue, $reason, $recipientId);
+$stmt->execute();
 
-if ($stmt->execute()) {
-    echo json_encode(["status" => "success", "message" => "Amendment request submitted"]);
-} else {
-    echo json_encode(["status" => "error", "message" => "Database error"]);
-}
+// Done — HR will see requests dynamically in your query/display logic
+echo json_encode(["status" => "success", "message" => "Amendment request submitted"]);

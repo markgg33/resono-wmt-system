@@ -75,21 +75,40 @@ document.addEventListener("DOMContentLoaded", function () {
 //=====LOAD MONTHLY SUMMARY FUNCTION===//
 
 function loadMonthlySummary() {
-  const month =
-    document.getElementById("monthFilter").value ||
-    new Date().toISOString().slice(0, 7);
-
   const tableBody = document.querySelector("#summaryTable tbody");
   const tableWrapper = document.getElementById("summaryTableWrapper");
   tableWrapper.style.display = "block";
-
   const overlay = showLoadingOverlay();
 
-  // If admin selected a user, include it in the query
-  let url = `../backend/get_monthly_summary.php?month=${month}`;
-  if (typeof selectedUser !== "undefined" && selectedUser?.name) {
-    url += `&search=${encodeURIComponent(selectedUser.name)}`;
+  let url = "../backend/get_monthly_summary.php";
+  let params = [];
+
+  if (["admin", "hr", "executive"].includes(userRole)) {
+    // 🔹 Admins use date range
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    if (!startDate || !endDate) {
+      alert("Please select both start and end dates.");
+      hideLoadingOverlay(overlay);
+      return;
+    }
+
+    params.push(`start=${startDate}`);
+    params.push(`end=${endDate}`);
+  } else {
+    // 🔹 Regular users still use month filter
+    const month =
+      document.getElementById("monthFilter").value ||
+      new Date().toISOString().slice(0, 7);
+    params.push(`month=${month}`);
   }
+
+  if (selectedUser?.name) {
+    params.push(`search=${encodeURIComponent(selectedUser.name)}`);
+  }
+
+  url += "?" + params.join("&");
 
   fetch(url)
     .then((res) => res.json())
@@ -115,6 +134,7 @@ function loadMonthlySummary() {
         return;
       }
 
+      // populate table
       summary.forEach((entry) => {
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = formatDateForDisplay(
@@ -132,7 +152,7 @@ function loadMonthlySummary() {
         row.insertCell(10).textContent = entry.personal_time || "00:00";
       });
 
-      // MTD Total Row
+      // MTD Totals
       const totalRow = tableBody.insertRow();
       totalRow.className = "table-success fw-bold";
       totalRow.insertCell(0).textContent = "MTD Total";
@@ -149,7 +169,7 @@ function loadMonthlySummary() {
 
       hideLoadingOverlay(overlay);
 
-      // Show Export Button after data loads
+      // ✅ Restore Export Buttons
       const exportPDFBtn = document.getElementById("exportPDFBtn");
       const exportCSVBtn = document.getElementById("exportCSVBtn");
       const exportDeptCSVBtn = document.getElementById("exportDeptCSVBtn");
@@ -159,7 +179,7 @@ function loadMonthlySummary() {
       if (exportDeptCSVBtn) exportDeptCSVBtn.style.display = "inline-block";
     })
     .catch((err) => {
-      console.error("Error loading monthly summary:", err);
+      console.error("Error loading summary:", err);
       alert("An error occurred while fetching the summary.");
       hideLoadingOverlay(overlay);
     });
@@ -207,108 +227,185 @@ function hideLoadingOverlay(overlay) {
   }, 500); // slightly longer delay for smoother UX
 }
 
-// === EXPORT TO CSV (Individual) ===
+// helper: sanitize filename (replace spaces and unsafe chars)
+function safeFilename(str) {
+  if (!str) return "export";
+  return String(str)
+    .replace(/\s+/g, "_")
+    .replace(/[^\w\-\.]/g, "_");
+}
+
+// helper: download blob
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+/* === EXPORT TO CSV (Individual) === */
 const exportCSVBtn = document.getElementById("exportCSVBtn");
 if (exportCSVBtn) {
-  exportCSVBtn.addEventListener("click", () => {
-    if (!selectedUser) {
+  exportCSVBtn.addEventListener("click", async () => {
+    if (!selectedUser || !selectedUser.id) {
       alert("Please select a user first.");
       return;
     }
-    const month =
-      document.getElementById("monthFilter").value ||
-      new Date().toISOString().slice(0, 7);
-    fetch(
-      `../backend/export_mtd_csv.php?user_id=${selectedUser.id}&month=${month}`
-    )
-      .then((res) => res.blob())
-      .then((blob) => {
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = `MTD_${selectedUser.name}_${month}.csv`;
-        link.click();
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Error exporting CSV.");
-      });
+
+    const overlay = showLoadingOverlay();
+    try {
+      let url = `../backend/export_mtd_csv.php?user_id=${encodeURIComponent(
+        selectedUser.id
+      )}`;
+      let filename;
+
+      if (["admin", "hr", "executive"].includes(userRole)) {
+        // admin/HR/executive use date range
+        const start = document.getElementById("startDate").value;
+        const end = document.getElementById("endDate").value;
+        if (!start || !end) {
+          alert("Please select both start and end dates.");
+          hideLoadingOverlay(overlay);
+          return;
+        }
+        url += `&start=${encodeURIComponent(start)}&end=${encodeURIComponent(
+          end
+        )}`;
+        filename = `Summary_${safeFilename(
+          selectedUser.name
+        )}_${start}_to_${end}.csv`;
+      } else {
+        // regular users use month MTD
+        const month =
+          document.getElementById("monthFilter").value ||
+          new Date().toISOString().slice(0, 7);
+        url += `&month=${encodeURIComponent(month)}`;
+        filename = `MTD_${safeFilename(selectedUser.name)}_${month}.csv`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const blob = await res.blob();
+      downloadBlob(blob, filename);
+    } catch (err) {
+      console.error("Error exporting CSV:", err);
+      alert("Error exporting CSV. Check server logs for details.");
+    } finally {
+      hideLoadingOverlay(overlay);
+    }
   });
 }
 
-// === EXPORT DEPARTMENT MTD (ZIP of CSVs) ===
+/* === EXPORT DEPARTMENT (ZIP of CSVs) === */
 const exportDeptCSVBtn = document.getElementById("exportDeptCSVBtn");
 if (exportDeptCSVBtn) {
-  exportDeptCSVBtn.addEventListener("click", () => {
-    const deptId = document.getElementById("summaryDepartmentFilter").value;
-    const month =
-      document.getElementById("monthFilter").value ||
-      new Date().toISOString().slice(0, 7);
-
-    if (!deptId || !month) {
-      alert("Please select both a department and a month before exporting.");
+  exportDeptCSVBtn.addEventListener("click", async () => {
+    const deptId = document.getElementById("summaryDepartmentFilter")?.value;
+    if (!deptId) {
+      alert("Please select a department first.");
       return;
     }
 
-    fetch(
-      `../backend/export_department_zip.php?department=${deptId}&month=${month}`
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to export department ZIP");
-        return res.blob();
-      })
-      .then((blob) => {
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = `Department_${deptId}_MTD_${month}.zip`;
-        link.click();
-      })
-      .catch((err) => {
-        console.error("Error exporting department ZIP:", err);
-        alert("Error exporting Department CSVs.");
-      });
+    const overlay = showLoadingOverlay();
+    try {
+      let url = `../backend/export_department_zip.php?department=${encodeURIComponent(
+        deptId
+      )}`;
+      let filename;
+
+      if (["admin", "hr", "executive"].includes(userRole)) {
+        const start = document.getElementById("startDate").value;
+        const end = document.getElementById("endDate").value;
+        if (!start || !end) {
+          alert("Please select both start and end dates.");
+          hideLoadingOverlay(overlay);
+          return;
+        }
+        url += `&start=${encodeURIComponent(start)}&end=${encodeURIComponent(
+          end
+        )}`;
+        filename = `Department_${safeFilename(deptId)}_${start}_to_${end}.zip`;
+      } else {
+        const month =
+          document.getElementById("monthFilter").value ||
+          new Date().toISOString().slice(0, 7);
+        url += `&month=${encodeURIComponent(month)}`;
+        filename = `Department_${safeFilename(deptId)}_MTD_${month}.zip`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const blob = await res.blob();
+      downloadBlob(blob, filename);
+    } catch (err) {
+      console.error("Error exporting department ZIP:", err);
+      alert("Error exporting Department ZIP. Check server logs for details.");
+    } finally {
+      hideLoadingOverlay(overlay);
+    }
   });
 }
 
-// === EXPORT TO PDF ===
-document.addEventListener("DOMContentLoaded", () => {
-  const exportBtn = document.getElementById("exportPDFBtn");
-  if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-      exportMonthlySummaryToPDF();
-    });
-  }
-});
+/* === EXPORT TO PDF (client-side) === */
+const exportPDFBtn = document.getElementById("exportPDFBtn");
+if (exportPDFBtn) {
+  exportPDFBtn.addEventListener("click", () => exportMonthlySummaryToPDF());
+}
 
 function exportMonthlySummaryToPDF() {
-  const month =
-    document.getElementById("monthFilter").value ||
-    new Date().toISOString().slice(0, 7);
+  let periodLabel = "";
+  let filename = "";
 
-  const userName = selectedUser?.name || loggedInUserName || "Myself";
+  const isAdminLike = ["admin", "hr", "executive"].includes(userRole);
+  if (isAdminLike) {
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    if (!start || !end) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+    periodLabel = `${start} to ${end}`;
+    filename = `Summary_${safeFilename(
+      selectedUser?.name ||
+        (typeof loggedInUserName !== "undefined" ? loggedInUserName : "Myself")
+    )}_${start}_to_${end}.pdf`;
+  } else {
+    const month =
+      document.getElementById("monthFilter").value ||
+      new Date().toISOString().slice(0, 7);
+    periodLabel = month;
+    filename = `Monthly_Summary_${safeFilename(
+      selectedUser?.name ||
+        (typeof loggedInUserName !== "undefined" ? loggedInUserName : "Myself")
+    )}_${month}.pdf`;
+  }
+
+  const userName =
+    selectedUser?.name ||
+    (typeof loggedInUserName !== "undefined" ? loggedInUserName : "Myself");
   const summaryTable = document.getElementById("summaryTable");
 
-  // === Create custom content wrapper for PDF ===
   const pdfContent = document.createElement("div");
   pdfContent.style.fontFamily = "Arial, sans-serif";
-  pdfContent.style.padding = "20px";
-
+  pdfContent.style.padding = "18px";
   pdfContent.innerHTML = `
-    <div style="margin-bottom: 20px;">
-      <img src="../assets/RESONO_logo_edited.png" alt="Company Logo" style="text-align:center; height: 60px; margin-bottom: 10px;" />
-      <h2 style=" text-align:center; margin: 5px 0;">Monthly Summary Report</h2>
-      <p style="margin: 0;"><strong>User:</strong> ${userName}</p>
-      <p style="margin: 0;"><strong>Month:</strong> ${month}</p>
+    <div style="text-align:center; margin-bottom:12px;">
+      <img src="../assets/RESONO_logo_edited.png" alt="Logo" style="height:56px; display:block; margin:0 auto 8px;" />
+      <h2 style="margin:0 0 6px;">Summary Report</h2>
+      <div><strong>User:</strong> ${userName}</div>
+      <div><strong>Period:</strong> ${periodLabel}</div>
     </div>
-    <div>${summaryTable.outerHTML}</div>
-    <div style="margin-top: 30px; text-align: center; font-size: 12px; color: gray;">
-      Generated on ${new Date().toLocaleString()}
-    </div>
+    <div>${summaryTable ? summaryTable.outerHTML : "<p>No table data</p>"}</div>
+    <div style="margin-top:14px; text-align:center; font-size:11px; color:gray;">Generated on ${new Date().toLocaleString()}</div>
   `;
 
-  // === PDF Options ===
   const opt = {
-    margin: 0.5,
-    filename: `Monthly_Summary_${userName}_${month}.pdf`,
+    margin: 0.4,
+    filename,
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: { scale: 2 },
     jsPDF: { unit: "in", format: "a4", orientation: "landscape" },
@@ -319,9 +416,9 @@ function exportMonthlySummaryToPDF() {
     .from(pdfContent)
     .toPdf()
     .get("pdf")
-    .then(function (pdf) {
+    .then((pdf) => {
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank"); // Open in new tab
+      window.open(url, "_blank");
     });
 }

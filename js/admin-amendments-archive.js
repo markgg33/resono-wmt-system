@@ -73,10 +73,10 @@ document.addEventListener("DOMContentLoaded", function () {
     <td>${req.requester_name}</td>
     <td>
       <span class="badge ${
-        req.status === "Approved" ? "bg-success" : "bg-danger"
+        req.status.toLowerCase() === "approved" ? "bg-success" : "bg-danger"
       }">
-        ${req.status}
-      </span>
+  ${req.status.charAt(0).toUpperCase() + req.status.slice(1).toLowerCase()}
+</span>
     </td>
     <td>${req.processed_at ? req.processed_at : "-"}</td>
     <td>${

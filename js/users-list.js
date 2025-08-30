@@ -25,20 +25,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
         users.forEach((user) => {
           let row = `<tr>
-          <td>${user.first_name} ${user.middle_name || ""} ${
-            user.last_name
-          }</td>
-          <td>${user.department_name || "-"}</td>
-          <td>${user.role}</td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-primary editUserBtn" data-id="${
-              user.id
-            }">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-          </td>
-        </tr>`;
+  <td>${user.first_name} ${user.middle_name || ""} ${user.last_name}</td>
+  <td>${user.department_name || "-"}</td>
+  <td>${user.role}</td>
+  <td class="text-center">
+    <button class="btn btn-sm btn-success editUserBtn" data-id="${user.id}">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </button>
+    <button class="btn btn-sm btn-danger deleteUserBtn" data-id="${user.id}">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  </td>
+</tr>`;
           tbody.insertAdjacentHTML("beforeend", row);
+        });
+
+        document.querySelectorAll(".deleteUserBtn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            if (!confirm("Are you sure you want to delete this user?")) return;
+            fetch("../backend/delete_user.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: this.dataset.id }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                alert(data.success || data.error);
+                if (data.success) loadUsers();
+              });
+          });
         });
 
         document.querySelectorAll(".editUserBtn").forEach((btn) => {

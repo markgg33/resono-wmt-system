@@ -2,17 +2,29 @@
 session_start();
 require_once "connection_db.php";
 
-if (!isset($_GET['user_id']) || !isset($_GET['month'])) {
+// === Input validation ===
+if (!isset($_GET['user_id'])) {
     http_response_code(400);
-    echo "Missing parameters.";
+    echo "Missing user_id.";
     exit;
 }
 
 $userId = intval($_GET['user_id']);
-$month = $_GET['month']; // YYYY-MM
 
-$monthStart = "$month-01";
-$monthEnd   = date("Y-m-t", strtotime($monthStart));
+// Accept either ?month=YYYY-MM OR ?start&end
+if (!empty($_GET['month'])) {
+    $month = $_GET['month'];
+    $monthStart = "$month-01";
+    $monthEnd   = date("Y-m-t", strtotime($monthStart));
+} elseif (!empty($_GET['start']) && !empty($_GET['end'])) {
+    $monthStart = $_GET['start'];
+    $monthEnd   = $_GET['end'];
+    $month      = substr($monthStart, 0, 7) . "_to_" . substr($monthEnd, 0, 7);
+} else {
+    http_response_code(400);
+    echo "Missing parameters: provide either month or start+end.";
+    exit;
+}
 
 // === Fetch user info (name + department) ===
 $stmt = $conn->prepare("
@@ -110,7 +122,6 @@ foreach ($dailyLogs as $date => $logs) {
         }
     }
 
-    // Add to summary
     $summary[] = [
         'date'          => $date,
         'login'         => $login ?? '--',
@@ -125,7 +136,6 @@ foreach ($dailyLogs as $date => $logs) {
         'personal_time' => formatDuration($durations['personal_time']),
     ];
 
-    // Add to totals
     $totals['total']         += $totalTime;
     $totals['production']    += $durations['production'];
     $totals['offphone']      += $durations['offphone'];
@@ -141,21 +151,15 @@ header("Content-Type: text/csv");
 header("Content-Disposition: attachment; filename=MTD_User_${userId}_${month}.csv");
 
 $out = fopen("php://output", "w");
-
-// Header info
 fputcsv($out, ["User", $userName]);
 fputcsv($out, ["Department", $department]);
-fputcsv($out, []); // empty line
-
-// Table headers
+fputcsv($out, []);
 fputcsv($out, ["Date", "Login", "Logout", "Total", "Production", "Offphone", "Training", "Resono", "Paid Break", "Unpaid Break", "Personal Time"]);
 
-// Rows
 foreach ($summary as $row) {
     fputcsv($out, $row);
 }
 
-// Totals row
 fputcsv($out, [
     "TOTALS",
     "",
@@ -184,8 +188,6 @@ function formatDuration($seconds)
 function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$usedUnpaidBreak)
 {
     $remaining = $duration;
-
-    // Paid break max 30 mins/day
     $remainingPaid = max(0, 1800 - $usedPaidBreak);
     if ($remainingPaid > 0) {
         $paid = min($remaining, $remainingPaid);
@@ -193,8 +195,6 @@ function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$us
         $usedPaidBreak += $paid;
         $remaining -= $paid;
     }
-
-    // Unpaid break max 60 mins/day
     if ($remaining > 0) {
         $remainingUnpaid = max(0, 3600 - $usedUnpaidBreak);
         if ($remainingUnpaid > 0) {
@@ -204,8 +204,6 @@ function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$us
             $remaining -= $unpaid;
         }
     }
-
-    // Excess → personal
     if ($remaining > 0) {
         $durations['personal_time'] += $remaining;
     }

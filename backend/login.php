@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => true, 'redirect' => 'dashboards/admin-dashboard.php']);
             } else if ($user['role'] === 'user') {
                 echo json_encode(['success' => true, 'redirect' => 'dashboards/user-dashboard.php']);
+            } else if ($user['role'] === 'client') {
+                echo json_encode(['success' => true, 'redirect' => 'dashboards/client-dashboard.php']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized role.']);
             }

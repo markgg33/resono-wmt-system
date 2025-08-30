@@ -67,7 +67,7 @@ $(document).ready(function () {
         alert(response.message);
         if (response.status === "success") {
           $("#userAmendmentModal").modal("hide");
-          loadUserLogs();
+          //sloadUserLogs();
         }
       },
       "json"

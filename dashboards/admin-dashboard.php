@@ -41,7 +41,10 @@ $loggedInUserRole = $_SESSION['role'];
     <!---SESSION STORAGE--->
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
+        sessionStorage.setItem("userRole", "<?php echo $_SESSION['role']; ?>");
+        const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
     </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 
 </head>
@@ -86,8 +89,9 @@ $loggedInUserRole = $_SESSION['role'];
                     </a>
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="dtrAmendmentSubmenu">
-                        <li class="sidebar-list-item" data-page="dtr-amendment" onclick="changePage('dtr-amendment')">Requests</li>
-                        <li class="sidebar-list-item" data-page="dtr-amendment-archive" onclick="changePage('dtr-amendment-archive')">Archive</li>
+                        <li class="sidebar-list-item" data-page="admin-request" onclick="changePage('admin-request')">Admin Requests</li>
+                        <li class="sidebar-list-item" data-page="dtr-amendment" onclick="changePage('dtr-amendment')">DTR Requests</li>
+                        <li class="sidebar-list-item" data-page="dtr-amendment-archive" onclick="changePage('dtr-amendment-archive')">DTR Archives</li>
                     </ul>
                 </li>
 
@@ -115,6 +119,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="systemSettingsmenu">
                         <li class="sidebar-list-item" data-page="create-work-mode" onclick="changePage('create-work-mode')">Create Work Mode</li>
+                        <li class="sidebar-list-item" data-page="departments" onclick="changePage('departments')">Departments</li>
                         <li class="sidebar-list-item" data-page="archive" onclick="changePage('archive')">Archives</li>
                         <li class="sidebar-list-item" data-page="edit-profile" onclick="changePage('edit-profile')">Edit Profile</li>
                     </ul>
@@ -250,6 +255,42 @@ $loggedInUserRole = $_SESSION['role'];
 
             </div>
 
+            <!---DEPARTMENTS PAGE--->
+            <div id="departments-page" class="page-content">
+                <div class="main-title">
+                    <h1>DEPARTMENTS</h1>
+                </div>
+
+                <!-- Add Department Form -->
+                <div class="card mb-4 shadow-sm p-3">
+                    <h5 class="mb-3">Add Department</h5>
+                    <form id="addDeptForm" class="d-flex gap-2">
+                        <input
+                            type="text"
+                            id="deptName"
+                            class="form-control"
+                            placeholder="Enter department name"
+                            required />
+                        <button type="submit" class="btn btn-success">Add</button>
+                    </form>
+                </div>
+
+                <!-- Departments Table -->
+                <div class="table-responsive">
+                    <table id="departmentsTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- USERS LIST PAGE -->
             <div id="users-list-page" class="page-content">
                 <div class="main-title">
@@ -324,7 +365,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 </div>
 
                                 <button type="button" class="btn btn-outline-secondary mb-2" id="addMoreTask">+ Add More</button>
-                                <button type="submit" class="btn btn-primary w-100">Add Task Descriptions</button>
+                                <button type="submit" class="btn btn-success w-100">Add Task Descriptions</button>
                             </form>
                         </div>
                     </div>
@@ -376,21 +417,30 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
 
                 <div class="filters mb-3 row g-2">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label for="searchUser">Search User</label>
                         <input type="text" id="searchUser" placeholder="Search User" class="form-control" />
                     </div>
-                    <div class="col-md-3">
-                        <input type="month" id="monthFilter" class="form-control" />
+                    <div class="col-md-2">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" class="form-control" />
                     </div>
                     <div class="col-md-3">
+                        <label for="summaryDepartmentFilter">Select Department</label>
                         <select class="form-select" id="summaryDepartmentFilter">
                             <option value="">All Departments</option>
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <label for=""></label>
                         <button class="btn btn-success w-100" onclick="searchUsers()">Search</button>
                     </div>
                 </div>
+
 
 
                 <!-- Search Result List -->
@@ -527,6 +577,35 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
+            <!---ADMIN REQUEST SECTION--->
+            <div id="admin-request-page" class="page-content">
+                <div class="main-title">
+                    <h1>ADMIN REQUESTS</h1>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Request UID</th>
+                            <!--th>Request #</th-->
+                            <th>Date</th>
+                            <th>Task</th>
+                            <th>Field</th>
+                            <th>Old Value</th>
+                            <th>New Value</th>
+                            <th>Reason</th>
+                            <th>Recipient</th>
+                            <th>Status</th>
+                            <th>Processed By</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-request-table">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+
             <!---ADMIN DTR AMENDMENT USER--->
             <div id="dtr-amendment-page" class="page-content">
                 <div class="main-title">
@@ -619,9 +698,12 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/admin-amendment-modal.php"; ?>
     <?php include "../modals/user-amendment-modal.php"; ?>
     <?php include "../modals/admin-user-profile-modal.php"; ?>
-
+    <?php include "../modals/admin-edit-request-modal.php"; ?>
+    <?php include "../modals/edit-department-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/admin-request-render.js"></script>
+    <script src="../js/admin-amendments.js"></script>
     <script src="../js/edit-profile.js"></script>
     <script src="../js/start-tag-task.js"></script>
     <script src="../js/slider-function.js"></script>
@@ -633,12 +715,12 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/toggle-password.js"></script>
     <script src="../js/js-modals/user-added-modal.js"></script>
     <script src="../js/tracker-edit-task.js"></script>
-    <script src="../js/admin-amendments.js"></script>
     <script src="../js/user-amendments.js"></script>
     <script src="../js/archive.js"></script>
     <script src="../js/user-requests.js"></script>
     <script src="../js/admin-amendments-archive.js"></script>
     <script src="../js/users-list.js"></script>
+    <script src="../js/departments.js"></script>
 
 
 
