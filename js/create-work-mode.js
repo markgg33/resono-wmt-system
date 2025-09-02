@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!modeId) return;
 
       // --- Work Mode Name ---
-      // --- Work Mode Name ---
+      
       fetch(`../backend/get_work_modes.php?id=${modeId}`)
         .then((res) => res.json())
         .then((data) => {

@@ -101,6 +101,49 @@
   justify-content: center;
 }
 
-.btn-logout{
-    color: rgb(39, 39, 39);
+.btn-logout {
+  color: rgb(39, 39, 39);
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px; /* smaller cap */
+  margin: auto;
+}
+
+#barChart,
+#pieChart {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Toggle Switch Container */
+.toggle-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.toggle-switch {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch button {
+  padding: 10px 30px;
+  border: none;
+  background: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+  color: #444;
+}
+
+.toggle-switch button.active {
+  background: #007bff;
+  color: white;
 }

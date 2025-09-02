@@ -136,6 +136,10 @@ $loggedInUserRole = $_SESSION['role'];
                             <div id="slideButtonWrapper" class="slide-button-wrapper">
                                 <div class="slide-button-handle" id="slideButtonHandle">▶ Slide to Tag</div>
                             </div>
+
+                            <!---button class="btn btn-primary mb-2" data-bs-toggle="modal" data-bs-target="#insertTaskModal">
+                                <i class="fa-solid fa-plus"></i> Insert Missed Task
+                            </button--->
                         </div>
 
                         <!-- Task Log Table -->
@@ -398,11 +402,10 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/toggle-password.js"></script>
     <script src="../js/edit-profile.js"></script>
     <script src="../js/tracker-edit-task.js"></script>
-    <script src="../js/edit-profile.js"></script>
     <script src="../js/user-requests.js"></script>
     <script src="../js/archive.js"></script>
     <script src="../js/user-request-render.js"></script>
-
+    <script src="../js/insert-task-in-between.js"></script>
 
 
     <script>

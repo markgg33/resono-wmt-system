@@ -28,7 +28,21 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("ssssi", $first_name, $middle_name, $last_name, $employee_id, $userId);
 
 if ($stmt->execute()) {
-    echo json_encode(["success" => "Profile updated successfully"]);
+    // ✅ Build full name with middle initial (if middle name exists)
+    $middleInitial = $middle_name ? " " . strtoupper(substr($middle_name, 0, 1)) . "." : "";
+    $fullName = $first_name . $middleInitial . " " . $last_name;
+
+    // ✅ Update session
+    $_SESSION['name'] = $fullName;
+
+    echo json_encode([
+        "success" => "Profile updated successfully",
+        "name" => $fullName
+    ]);
 } else {
     echo json_encode(["error" => "Error updating profile"]);
 }
+
+
+$stmt->close();
+$conn->close();

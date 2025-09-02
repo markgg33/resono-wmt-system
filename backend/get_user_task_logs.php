@@ -1,10 +1,10 @@
 <?php
 session_start();
-require 'connection_db.php';
+require_once "connection_db.php";
 header('Content-Type: application/json');
 
+// Ensure user is logged in
 $userId = $_SESSION['user_id'] ?? null;
-
 if (!$userId) {
   echo json_encode(["status" => "error", "message" => "No user ID found"]);
   exit;
@@ -13,7 +13,7 @@ if (!$userId) {
 $query = "
   SELECT 
     tl.id,
-    tl.date,  
+    tl.date,
     TIME(tl.start_time) AS start_time,
     TIME(tl.end_time) AS end_time,
     tl.start_time AS full_start,
@@ -26,7 +26,6 @@ $query = "
   JOIN work_modes wm ON wm.id = tl.work_mode_id
   JOIN task_descriptions td ON td.id = tl.task_description_id
   WHERE tl.user_id = ?
-    AND DATE_FORMAT(tl.date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
   ORDER BY tl.date ASC, tl.id ASC
 ";
 
@@ -37,15 +36,6 @@ $result = $stmt->get_result();
 
 $logs = [];
 while ($row = $result->fetch_assoc()) {
-  // Compute total time spent if end time is present
-  if (!empty($row['full_end'])) {
-    $start = new DateTime($row['full_start']);
-    $end = new DateTime($row['full_end']);
-    $interval = $start->diff($end);
-    $row['computed_duration'] = $interval->format('%H:%I');
-  } else {
-    $row['computed_duration'] = '--';
-  }
   $logs[] = $row;
 }
 

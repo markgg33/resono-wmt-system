@@ -38,7 +38,7 @@ document
       first_name: document.getElementById("edit_first_name").value,
       middle_name: document.getElementById("edit_middle_name").value,
       last_name: document.getElementById("edit_last_name").value,
-      employee_id: document.getElementById("employee_id").value || null, // optional
+      employee_id: document.getElementById("edit_employee_id").value || null, // optional
 
       // No email — it's readonly and shouldn't be sent
     };
@@ -51,10 +51,24 @@ document
       .then((res) => res.json())
       .then((data) => {
         let msgDiv = document.getElementById("profileMessage");
-        msgDiv.innerHTML = data.success
-          ? `<div class="alert alert-success">${data.success}</div>`
-          : `<div class="alert alert-danger">${data.error}</div>`;
-      });
+
+        if (data.success) {
+          // ✅ Show success alert
+          msgDiv.innerHTML = `<div class="alert alert-success">${data.success}</div>`;
+
+          // ✅ Update the sidebar name instantly
+          const nameElement = document.querySelector("p.text-center strong");
+          if (nameElement && data.name) {
+            nameElement.textContent = data.name;
+          }
+        } else {
+          // ❌ Show error alert
+          msgDiv.innerHTML = `<div class="alert alert-danger">${
+            data.error || "Update failed"
+          }</div>`;
+        }
+      })
+      .catch((err) => console.error("Error updating profile:", err));
   });
 
 // Change Password
@@ -65,7 +79,7 @@ document
 
     // Confirmation before update
     if (!confirm("Update Password?")) {
-        return; // Stop execution if cancelled
+      return; // Stop execution if cancelled
     }
 
     let payload = {

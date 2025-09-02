@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 require_once "../backend/connection_db.php"; // Adjust path if needed
 
@@ -160,6 +159,10 @@ $loggedInUserRole = $_SESSION['role'];
                             <div id="slideButtonWrapper" class="slide-button-wrapper">
                                 <div class="slide-button-handle" id="slideButtonHandle">▶ Slide to Tag</div>
                             </div>
+
+                            <!---button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#insertTaskModal">
+                                <i class="fa-solid fa-plus"></i> Insert Missed Task
+                            </button--->
                         </div>
 
                         <!-- Task Log Table -->
@@ -289,6 +292,32 @@ $loggedInUserRole = $_SESSION['role'];
                         </tbody>
                     </table>
                 </div>
+                <!-- Work Mode Assignment Section -->
+                <div class="card mt-4 shadow-sm p-3">
+                    <h5 class="mb-3">Assign Work Modes to Department</h5>
+                    <form id="assignWorkModeForm" class="d-flex gap-2">
+                        <select id="assignDeptSelect" class="form-control" required></select>
+                        <select id="assignWorkModeSelect" class="form-control" required></select>
+                        <button type="submit" class="btn btn-success">Assign</button>
+                    </form>
+                </div>
+
+                <!-- Assigned Work Modes Table -->
+                <div class="table-responsive mt-4">
+                    <table id="deptWorkModesTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th>Work Mode</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
             </div>
 
             <!-- USERS LIST PAGE -->
@@ -721,6 +750,9 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/admin-amendments-archive.js"></script>
     <script src="../js/users-list.js"></script>
     <script src="../js/departments.js"></script>
+    <script src="../js/insert-task-in-between.js"></script>
+    <script src="../js/assign-dept-wmt.js"></script>
+
 
 
 
