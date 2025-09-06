@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role']        = $user['role'];
             $_SESSION['profile_image'] = $user['profile_image']
                 ? $user['profile_image']
-                : 'assets/default-avatar.png';
+                : 'assets/default-avatar.jpg';
 
             // Display name
             $full_name = trim(
