@@ -50,17 +50,35 @@ $loggedInUserRole = $_SESSION['role'];
 
     <div class="grid-container">
 
+        <!-----HEADER------>
+
+        <header class="header">
+            <img src="../assets/RESONO_logo_edited.png" width="40px" alt="Resono logo">
+            <div class="time-container text-center">
+                <h5 id="live-date" class="fw-bold"></h5>
+                <h6 id="live-time" class="text-muted"></h6>
+            </div>
+            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+        </header>
+
         <!---SIDEBAR--->
         <aside id="rsn-sidebar">
-            <div class="logout-container">
-                <img src="../assets/RESONO_logo_edited.png" width="100px" alt="">
-                <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-power-off"></i></button></a>
+            <div class="profile-container">
                 <br>
+                <?php
+                $userImage = !empty($_SESSION['profile_image'])
+                    ? "../" . $_SESSION['profile_image']
+                    : "../assets/default-avatar.png";
+                ?>
+                <img src="<?php echo htmlspecialchars($userImage); ?>"
+                    alt="Profile Image"
+                    class="rounded-circle mb-2"
+                    width="150" height="150"
+                    style="object-fit: cover;">
                 <p class="text-center">Welcome, <br><strong><?php
                                                             echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Guest';
                                                             ?> </strong></p>
             </div>
-
             <ul class="sidebar-list" data-aos="fade-right">
                 <li>
                     <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#generalSubmenu" role="button" aria-expanded="false" aria-controls="generalSubmenu">
@@ -110,10 +128,6 @@ $loggedInUserRole = $_SESSION['role'];
             <div id="my-tracker-page" class="page-content">
                 <div class="main-title">
                     <h1>MY TRACKER</h1>
-                    <div class="time-container">
-                        <h3 id="live-date" class="fw-bold"></h3>
-                        <h6 id="live-time" class="text-muted"></h6>
-                    </div>
                 </div>
 
                 <div class="rsn-main-cards">
@@ -236,7 +250,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                         <!-- Profile Info Tab -->
                         <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
-                            <form id="updateProfileForm" class="modern-form">
+                            <form id="updateProfileForm" class="modern-form" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label>Employee ID</label>
                                     <input type="text" id="edit_employee_id" class="form-control-modern">
@@ -265,10 +279,24 @@ $loggedInUserRole = $_SESSION['role'];
                                     <label>Department</label>
                                     <input type="text" id="edit_department" class="form-control-modern" disabled>
                                 </div>
-                                <button type="submit" class="btn-modern btn-primary-modern">Update Profile</button>
+
+                                <!-- ✅ Profile Image (preview + upload) -->
+                                <div class="form-group">
+                                    <label>Profile Image</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img id="profilePreview" src="../assets/default-avatar.png" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
+                                        <div class="w-100">
+                                            <input type="file" id="edit_profile_image" class="form-control-modern" accept="image/*">
+                                            <small class="text-muted">JPEG/PNG/GIF, up to 5MB.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="profileSubmitBtn" class="btn-modern btn-primary-modern">Update Profile</button>
                             </form>
                             <div id="profileMessage" class="mt-2"></div>
                         </div>
+
 
                         <!-- Change Password Tab -->
                         <div class="tab-pane fade" id="changePassword" role="tabpanel">

@@ -5,9 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function loadUsers(departmentId = "") {
     let url = "../backend/get_all_users.php";
-    if (departmentId) {
-      url += `?department_id=${departmentId}`;
-    }
+    if (departmentId) url += `?department_id=${departmentId}`;
 
     fetch(url)
       .then((res) => res.json())
@@ -16,28 +14,68 @@ document.addEventListener("DOMContentLoaded", function () {
         tbody.innerHTML = "";
 
         if (!users || users.length === 0) {
-          let noRow = `<tr>
-          <td colspan="4" class="text-center text-muted">No results found</td>
+          tbody.innerHTML = `<tr>
+          <td colspan="6" class="text-center text-muted">No results found</td>
         </tr>`;
-          tbody.insertAdjacentHTML("beforeend", noRow);
           return;
         }
 
         users.forEach((user) => {
-          let row = `<tr>
-  <td>${user.first_name} ${user.middle_name || ""} ${user.last_name}</td>
-  <td>${user.department_name || "-"}</td>
-  <td>${user.role}</td>
-  <td class="text-center">
-    <button class="btn btn-sm btn-success editUserBtn" data-id="${user.id}">
-      <i class="fa-solid fa-pen-to-square"></i>
-    </button>
-    <button class="btn btn-sm btn-danger deleteUserBtn" data-id="${user.id}">
-      <i class="fa-solid fa-trash"></i>
-    </button>
-  </td>
-</tr>`;
+          let image = user.profile_image
+            ? `../${user.profile_image}`
+            : "../assets/default-avatar.jpg";
+
+          let statusChecked = user.status === "active" ? "checked" : "";
+
+          let row = `
+          <tr>
+            <td><img src="${image}" class="rounded-circle" width="50" height="50" style="object-fit:cover;"></td>
+            <td>${user.first_name} ${user.middle_name || ""} ${
+            user.last_name
+          }</td>
+            <td>${user.department_name || "-"}</td>
+            <td>${user.role}</td>
+            <td class="text-center">
+              <div class="form-check form-switch">
+                <input class="form-check-input toggleStatus" type="checkbox" data-id="${
+                  user.id
+                }" ${statusChecked}>
+                <label>${user.status}</label>
+              </div>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-success editUserBtn" data-id="${
+                user.id
+              }">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn btn-sm btn-danger deleteUserBtn" data-id="${
+                user.id
+              }">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>`;
           tbody.insertAdjacentHTML("beforeend", row);
+        });
+
+        // Attach events
+        document.querySelectorAll(".toggleStatus").forEach((toggle) => {
+          toggle.addEventListener("change", function () {
+            fetch("../backend/update_user_status.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: this.dataset.id,
+                status: this.checked ? "active" : "inactive",
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (!data.success) alert("Failed to update status");
+                loadUsers(departmentId);
+              });
+          });
         });
 
         document.querySelectorAll(".deleteUserBtn").forEach((btn) => {
@@ -61,9 +99,6 @@ document.addEventListener("DOMContentLoaded", function () {
             openEditModal(this.dataset.id);
           });
         });
-      })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
       });
   }
 
@@ -134,20 +169,41 @@ document.addEventListener("DOMContentLoaded", function () {
     .addEventListener("submit", function (e) {
       e.preventDefault();
 
-      let payload = {
-        id: document.getElementById("admin_edit_user_id").value,
-        first_name: document.getElementById("admin_edit_first_name").value,
-        middle_name: document.getElementById("admin_edit_middle_name").value,
-        last_name: document.getElementById("admin_edit_last_name").value,
-        employee_id: document.getElementById("admin_edit_employee_id").value,
-        role: document.getElementById("admin_edit_role").value,
-        department_id: document.getElementById("admin_edit_department").value,
-      };
+      let formData = new FormData();
+      formData.append(
+        "id",
+        document.getElementById("admin_edit_user_id").value
+      );
+      formData.append(
+        "first_name",
+        document.getElementById("admin_edit_first_name").value
+      );
+      formData.append(
+        "middle_name",
+        document.getElementById("admin_edit_middle_name").value
+      );
+      formData.append(
+        "last_name",
+        document.getElementById("admin_edit_last_name").value
+      );
+      formData.append(
+        "employee_id",
+        document.getElementById("admin_edit_employee_id").value
+      );
+      formData.append("role", document.getElementById("admin_edit_role").value);
+      formData.append(
+        "department_id",
+        document.getElementById("admin_edit_department").value
+      );
+
+      let fileInput = document.getElementById("admin_edit_profile_image");
+      if (fileInput.files.length > 0) {
+        formData.append("profile_image", fileInput.files[0]);
+      }
 
       fetch("../backend/update_user_admin.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,
       })
         .then((res) => res.json())
         .then((data) => {
@@ -161,3 +217,28 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+function toggleUserStatus(userId, currentStatus) {
+  const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+  fetch("../backend/update_user_status.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: userId, status: newStatus }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        // Update the toggle visually
+        const toggle = document.querySelector(`#status-toggle-${userId}`);
+        if (toggle) {
+          toggle.checked = newStatus === "active";
+          toggle.setAttribute("data-status", newStatus);
+        }
+        showToast(`Status updated: ${newStatus}`);
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => console.error("Error:", err));
+}
