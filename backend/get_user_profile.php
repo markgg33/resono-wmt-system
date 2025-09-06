@@ -10,15 +10,31 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_GET['id'] ?? $_SESSION['user_id'];
 
-$sql = "SELECT u.employee_id, u.first_name, u.middle_name, u.last_name, u.email, u.role, 
-               u.department_id, d.name AS department_name
+$sql = "SELECT 
+            u.employee_id, 
+            u.first_name, 
+            u.middle_name, 
+            u.last_name, 
+            u.email, 
+            u.role, 
+            u.department_id, 
+            d.name AS department_name,
+            u.profile_image
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.id = ?";
-
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
-echo json_encode($result->fetch_assoc());
+
+if ($row = $result->fetch_assoc()) {
+    // Ensure profile_image always has a valid path (fallback)
+    if (empty($row['profile_image'])) {
+        $row['profile_image'] = "assets/img/default-avatar.png";
+    }
+    echo json_encode($row);
+} else {
+    echo json_encode(["error" => "User not found"]);
+}
