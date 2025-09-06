@@ -6,6 +6,7 @@ $departmentId = isset($_GET['department_id']) ? intval($_GET['department_id']) :
 
 $sql = "SELECT u.id, u.first_name, u.middle_name, u.last_name, 
                u.email, u.role, u.employee_id,
+               u.status, u.profile_image,
                d.name AS department_name, u.department_id
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id";

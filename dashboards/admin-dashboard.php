@@ -4,7 +4,7 @@ require_once "../backend/connection_db.php"; // Adjust path if needed
 
 
 // Check if user is logged in and has an authorized role
-$allowedRoles = ['admin', 'hr', 'executive'];
+$allowedRoles = ['admin', 'hr', 'executive', 'supervisor'];
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowedRoles)) {
     header("Location: ../backend/login.php"); // Adjust if your login page is in another folder
@@ -52,12 +52,30 @@ $loggedInUserRole = $_SESSION['role'];
 
     <div class="grid-container">
 
+        <!---HEADER--->
+        <header class="header">
+            <img src="../assets/RESONO_logo_edited.png" width="50px" alt="">
+            <div class="time-container text-center">
+                <h5 id="live-date" class="fw-bold"></h5>
+                <h6 id="live-time" class="text-muted"></h6>
+            </div>
+            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+        </header>
+
         <!---SIDEBAR--->
         <aside id="rsn-sidebar">
-            <div class="logout-container">
-                <img src="../assets/RESONO_logo_edited.png" width="100px" alt="">
-                <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-power-off"></i></button></a>
+            <div class="profile-container">
                 <br>
+                <?php
+                $userImage = !empty($_SESSION['profile_image'])
+                    ? "../" . $_SESSION['profile_image']
+                    : "../assets/default-avatar.png";
+                ?>
+                <img src="<?php echo htmlspecialchars($userImage); ?>"
+                    alt="Profile Image"
+                    class="rounded-circle mb-2"
+                    width="150" height="150"
+                    style="object-fit: cover;">
                 <p class="text-center">Welcome, <br><strong><?php
                                                             echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Guest';
                                                             ?> </strong></p>
@@ -133,10 +151,6 @@ $loggedInUserRole = $_SESSION['role'];
             <div id="my-tracker-page" class="page-content">
                 <div class="main-title">
                     <h1>MY TRACKER</h1>
-                    <div class="time-container">
-                        <h3 id="live-date" class="fw-bold"></h3>
-                        <h6 id="live-time" class="text-muted"></h6>
-                    </div>
                 </div>
 
                 <div class="rsn-main-cards">
@@ -197,7 +211,7 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
 
                 <div class="card p-4">
-                    <form action="../backend/add_user.php" method="POST" onsubmit="return confirmRegistration()">
+                    <form action="../backend/add_user.php" method="POST" enctype="multipart/form-data" onsubmit="return confirmRegistration()">
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="employee_id" class="form-label">Employee ID (Optional)</label>
@@ -229,7 +243,6 @@ $loggedInUserRole = $_SESSION['role'];
                                         <i class="fa-solid fa-eye-slash"></i>
                                     </span>
                                 </div>
-
                             </div>
                             <div class="col-md-4 mt-3">
                                 <label for="role" class="form-label">Role <span style="color:red;">*</span></label>
@@ -240,7 +253,12 @@ $loggedInUserRole = $_SESSION['role'];
                                     <option value="hr">HR</option>
                                     <option value="user">User</option>
                                     <option value="client">Client</option>
+                                    <option value="supervisor">Supervisor</option>
                                 </select>
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <label for="profile_image" class="form-label">Profile Image</label>
+                                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
                             </div>
                             <div class="col-md-4 mt-3" id="departmentField" style="display: none;">
                                 <label for="department_id" class="form-label">Department <span style="color:red;">*</span></label>
@@ -341,9 +359,11 @@ $loggedInUserRole = $_SESSION['role'];
                     <table id="usersTable" class="table table-striped table-bordered align-middle">
                         <thead>
                             <tr>
+                                <th scope="col">Image</th>
                                 <th scope="col">Name</th>
                                 <th scope="col">Department</th>
                                 <th scope="col">Role</th>
+                                <th scope="col">Status</th>
                                 <th scope="col" class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -528,7 +548,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                         <!-- Profile Info Tab -->
                         <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
-                            <form id="updateProfileForm" class="modern-form">
+                            <form id="updateProfileForm" class="modern-form" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label>Employee ID</label>
                                     <input type="text" id="edit_employee_id" class="form-control-modern">
@@ -557,7 +577,20 @@ $loggedInUserRole = $_SESSION['role'];
                                     <label>Department</label>
                                     <input type="text" id="edit_department" class="form-control-modern" disabled>
                                 </div>
-                                <button type="submit" class="btn-modern btn-primary-modern">Update Profile</button>
+
+                                <!-- ✅ Profile Image (preview + upload) -->
+                                <div class="form-group">
+                                    <label>Profile Image</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img id="profilePreview" src="../assets/default-avatar.png" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
+                                        <div class="w-100">
+                                            <input type="file" id="edit_profile_image" class="form-control-modern" accept="image/*">
+                                            <small class="text-muted">JPEG/PNG/GIF, up to 5MB.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="profileSubmitBtn" class="btn-modern btn-primary-modern">Update Profile</button>
                             </form>
                             <div id="profileMessage" class="mt-2"></div>
                         </div>
