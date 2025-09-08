@@ -5,8 +5,15 @@ require_once "../backend/connection_db.php"; // Adjust path if needed
 // Check if user is logged in and has an authorized role
 $allowedRoles = ['user'];
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowedRoles)) {
-    header("Location: ../backend/login.php"); // Adjust if your login page is in another folder
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    header("Location: ../errors/401.php");
+    exit;
+}
+
+if (!in_array($_SESSION['role'], $allowedRoles)) {
+    http_response_code(403);
+    header("Location: ../errors/403.php");
     exit;
 }
 
