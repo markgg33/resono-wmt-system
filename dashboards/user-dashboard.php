@@ -72,10 +72,6 @@ $loggedInUserRole = $_SESSION['role'];
         <aside id="rsn-sidebar">
             <div class="profile-container">
                 <br>
-                <div class="staging-badge">
-                    STAGING PHASE
-                </div>
-                <br>
                 <?php
                 $userImage = !empty($_SESSION['profile_image'])
                     ? "../" . $_SESSION['profile_image']
