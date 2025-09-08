@@ -28,7 +28,7 @@ http_response_code(403);
         .error-code {
             font-size: 5rem;
             font-weight: 700;
-            color: #fd7e14;
+            color: #00920cff;
         }
     </style>
 </head>
