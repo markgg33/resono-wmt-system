@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Mark online , need to set to 0 if ever tab was closed accidentally
             $conn->query("UPDATE users SET is_online = 1 WHERE id = {$user['id']}");
             // Role-based redirect
-            $adminRoles = ['admin', 'executive', 'hr', 'supervisor'];
+            $adminRoles = ['admin', 'executive', 'hr', 'supervisor', 'client']; //Added client to adminRoles
             if (in_array($user['role'], $adminRoles, true)) {
                 echo json_encode(['success' => true, 'redirect' => 'dashboards/admin-dashboard.php']);
             } elseif ($user['role'] === 'user') {
