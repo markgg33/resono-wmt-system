@@ -77,11 +77,22 @@ foreach ($users as $user) {
 
 $zip->close();
 
-// stream ZIP
 $zipFilenameSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $deptName);
 $downloadName = "{$zipFilenameSafe}_MTD_{$month}.zip";
+
+// Clean (avoid accidental output before ZIP content)
+if (ob_get_length()) {
+    ob_end_clean();
+}
 
 header('Content-Type: application/zip');
 header("Content-Disposition: attachment; filename=\"{$downloadName}\"");
 header('Content-Length: ' . filesize($zipFile));
+
+// Stream file
 readfile($zipFile);
+
+// Cleanup
+unlink($zipFile);
+exit;
+
