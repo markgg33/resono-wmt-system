@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
         modalSelect.innerHTML = `<option value="">-- Select Department --</option>`;
 
         // Populate filter select
-        let filterSelect = document.getElementById("departmentFilter");
+        let filterSelect = document.getElementById("adminDepartmentFilter");
         filterSelect.innerHTML = `<option value="">All Departments</option>`;
 
         depts.forEach((d) => {
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document
-    .getElementById("departmentFilter")
+    .getElementById("adminDepartmentFilter")
     .addEventListener("change", function () {
       loadUsers(this.value);
     });

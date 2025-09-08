@@ -20,6 +20,7 @@ $query = "
     tl.end_time AS full_end,
     tl.total_duration,
     tl.remarks,
+    tl.volume_remark, -- 🔹 include this
     wm.name AS work_mode,
     td.description AS task_description
   FROM task_logs tl
@@ -28,6 +29,7 @@ $query = "
   WHERE tl.user_id = ?
   ORDER BY tl.date ASC, tl.id ASC
 ";
+
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userId);

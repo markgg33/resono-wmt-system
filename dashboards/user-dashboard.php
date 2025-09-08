@@ -168,6 +168,7 @@ $loggedInUserRole = $_SESSION['role'];
                                         <th>End Time</th>
                                         <th>Total Time Spent</th>
                                         <th>Remarks</th>
+                                        <th>Volume</th> <!-- 🔹 NEW -->
                                         <th style="width: 120px;">Action</th>
                                     </tr>
                                 </thead>

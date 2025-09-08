@@ -90,6 +90,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="statusSubmenu">
                         <li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li>
+                        <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">Data Visualization</li>
                     </ul>
                 </li>
 
@@ -165,7 +166,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <!-- Department Filter -->
                     <div>
-                        <select id="departmentFilter" class="form-select shadow-sm">
+                        <select id="dashDepartmentFilter" class="form-select shadow-sm">
                             <option value="">All Departments</option>
                         </select>
                     </div>
@@ -209,7 +210,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---MY TRACKER PAGE--->
             <div id="my-tracker-page" class="page-content">
                 <div class="main-title">
-                    <h1 class="fw-bold" >MY TRACKER</h1>
+                    <h1 class="fw-bold">MY TRACKER</h1>
                 </div>
 
                 <div class="rsn-main-cards">
@@ -250,6 +251,7 @@ $loggedInUserRole = $_SESSION['role'];
                                         <th>End Time</th>
                                         <th>Total Time Spent</th>
                                         <th>Remarks</th>
+                                        <th>Volume</th> <!-- 🔹 NEW -->
                                         <th style="width: 120px;">Action</th>
                                     </tr>
                                 </thead>
@@ -406,8 +408,8 @@ $loggedInUserRole = $_SESSION['role'];
                 <!-- Department Filter -->
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label for="departmentFilter" class="form-label">Filter by Department:</label>
-                        <select id="departmentFilter" class="form-select">
+                        <label for="adminDepartmentFilter" class="form-label">Filter by Department:</label>
+                        <select id="adminDepartmentFilter" class="form-select">
                             <option value="0">All Departments</option>
                         </select>
                     </div>
