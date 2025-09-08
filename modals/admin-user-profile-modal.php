@@ -38,6 +38,10 @@
                         <label class="form-label">Department</label>
                         <select id="admin_edit_department" class="form-select"></select>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Profile Image</label>
+                        <input type="file" id="admin_edit_profile_image" class="form-control">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Save Changes</button>

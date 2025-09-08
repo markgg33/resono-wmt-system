@@ -1,68 +1,118 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const msgDiv = document.getElementById("profileMessage");
+  const previewImg = document.getElementById("profilePreview");
+  const fileInput = document.getElementById("edit_profile_image");
+  const submitBtn = document.getElementById("profileSubmitBtn");
+
+  // Load profile
   fetch("../backend/get_user_profile.php")
     .then((response) => response.json())
     .then((data) => {
       if (data.error) {
-        document.getElementById(
-          "profileMessage"
-        ).innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        msgDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
         return;
       }
+
+      document.getElementById("edit_employee_id").value =
+        data.employee_id || "";
       document.getElementById("edit_first_name").value = data.first_name || "";
       document.getElementById("edit_middle_name").value =
         data.middle_name || "";
       document.getElementById("edit_last_name").value = data.last_name || "";
       document.getElementById("edit_email").value = data.email || "";
       document.getElementById("edit_role").value = data.role || "";
+      document.getElementById("edit_department").value =
+        data.department_name || "";
+
+      // Show current profile image
+      const imgPath = data.profile_image
+        ? `../${data.profile_image}`
+        : "../assets/default-avatar.png";
+      previewImg.src = imgPath;
+
+      // Lock inputs if role is "user"
+      const isUser = (data.role || "").toLowerCase() === "user";
+      const lockIds = [
+        "edit_employee_id",
+        "edit_first_name",
+        "edit_middle_name",
+        "edit_last_name",
+      ];
+      lockIds.forEach((id) => (document.getElementById(id).disabled = isUser));
+
+      // Change button text
+      submitBtn.textContent = isUser ? "Update Photo" : "Update Profile";
     })
     .catch((err) => {
       console.error("Error loading profile:", err);
-      document.getElementById(
-        "profileMessage"
-      ).innerHTML = `<div class="alert alert-danger">Error loading profile.</div>`;
+      msgDiv.innerHTML = `<div class="alert alert-danger">Error loading profile.</div>`;
     });
+
+  // Preview new image before upload
+  fileInput.addEventListener("change", function () {
+    if (this.files && this.files[0]) {
+      const url = URL.createObjectURL(this.files[0]);
+      previewImg.src = url;
+    }
+  });
 });
 
-// Update Profile
+// Update Profile (with FormData for image)
 document
   .getElementById("updateProfileForm")
   .addEventListener("submit", function (e) {
     e.preventDefault();
 
-    // Confirmation before update
-    if (!confirm("Are you sure you want to update your profile?")) {
-      return; // Stop execution if cancelled
+    if (!confirm("Are you sure you want to update your profile?")) return;
+
+    const formData = new FormData();
+    formData.append(
+      "first_name",
+      document.getElementById("edit_first_name").value
+    );
+    formData.append(
+      "middle_name",
+      document.getElementById("edit_middle_name").value
+    );
+    formData.append(
+      "last_name",
+      document.getElementById("edit_last_name").value
+    );
+    formData.append(
+      "employee_id",
+      document.getElementById("edit_employee_id").value || ""
+    );
+
+    const fileInput = document.getElementById("edit_profile_image");
+    if (fileInput.files.length > 0) {
+      formData.append("profile_image", fileInput.files[0]);
     }
-
-    let payload = {
-      first_name: document.getElementById("edit_first_name").value,
-      middle_name: document.getElementById("edit_middle_name").value,
-      last_name: document.getElementById("edit_last_name").value,
-      employee_id: document.getElementById("edit_employee_id").value || null, // optional
-
-      // No email — it's readonly and shouldn't be sent
-    };
 
     fetch("../backend/update_profile.php", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: formData,
     })
       .then((res) => res.json())
       .then((data) => {
-        let msgDiv = document.getElementById("profileMessage");
+        const msgDiv = document.getElementById("profileMessage");
 
         if (data.success) {
-          // ✅ Show success alert
           msgDiv.innerHTML = `<div class="alert alert-success">${data.success}</div>`;
 
-          // ✅ Update the sidebar name instantly
+          // Update sidebar name
           const nameElement = document.querySelector("p.text-center strong");
           if (nameElement && data.name) {
             nameElement.textContent = data.name;
           }
+
+          // Update sidebar image if changed
+          if (data.profile_image) {
+            const sidebarImg = document.querySelector(
+              ".logout-container img.rounded-circle"
+            );
+            if (sidebarImg) sidebarImg.src = "../" + data.profile_image;
+          }
         } else {
-          // ❌ Show error alert
           msgDiv.innerHTML = `<div class="alert alert-danger">${
             data.error || "Update failed"
           }</div>`;
@@ -77,10 +127,7 @@ document
   .addEventListener("submit", function (e) {
     e.preventDefault();
 
-    // Confirmation before update
-    if (!confirm("Update Password?")) {
-      return; // Stop execution if cancelled
-    }
+    if (!confirm("Update Password?")) return;
 
     let payload = {
       current_password: document.getElementById("current_password").value,
