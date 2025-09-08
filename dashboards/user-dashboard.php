@@ -72,6 +72,10 @@ $loggedInUserRole = $_SESSION['role'];
         <aside id="rsn-sidebar">
             <div class="profile-container">
                 <br>
+                <div class="staging-badge">
+                    STAGING PHASE
+                </div>
+                <br>
                 <?php
                 $userImage = !empty($_SESSION['profile_image'])
                     ? "../" . $_SESSION['profile_image']
@@ -399,6 +403,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 <th>End Time</th>
                                 <th>Total Time Spent</th>
                                 <th>Remarks</th>
+                                <th>Volume Remark</th>
                             </tr>
                         </thead>
                         <tbody>

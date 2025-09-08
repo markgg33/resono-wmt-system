@@ -383,3 +383,9 @@
   background: #d48a1c;
 }
 
+.staging-badge{
+  padding: 10px;
+  border-radius: 10px;
+  background-color: rgb(182, 12, 12);
+  color: white;
+}

@@ -29,7 +29,7 @@ $sql = "
     tla.end_time AS full_end,
     tla.total_duration,
     tla.remarks,
-    tla.volume_remark,          <-- new volume_remark column for volume
+    tla.volume_remark,         
     wm.name AS work_mode,
     td.description AS task_description
   FROM task_logs_archive tla

@@ -94,20 +94,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const tbody = document.querySelector("#archiveLogTable tbody");
         tbody.innerHTML = "";
         if (!rows || rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No archived records</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" class="text-muted">No archived records</td></tr>`;
           return;
         }
         rows.forEach((log) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${formatDateDisplay(log.date)}</td>
-            <td>${log.work_mode}</td>
-            <td>${log.task_description}</td>
-            <td>${ensureHHMMSS(log.start_time)}</td>
-            <td>${log.end_time ? ensureHHMMSS(log.end_time) : "--"}</td>
-            <td>${log.computed_duration || "--"}</td>
-            <td>${log.remarks ? escapeHtml(log.remarks) : ""}</td>
-          `;
+      <td>${formatDateDisplay(log.date)}</td>
+      <td>${log.work_mode}</td>
+      <td>${log.task_description}</td>
+      <td>${ensureHHMMSS(log.start_time)}</td>
+      <td>${log.end_time ? ensureHHMMSS(log.end_time) : "--"}</td>
+      <td>${log.computed_duration || "--"}</td>
+      <td>${log.remarks ? escapeHtml(log.remarks) : ""}</td>
+      <td>${log.volume_remark ? escapeHtml(log.volume_remark) : ""}</td>
+    `;
           tbody.appendChild(tr);
         });
       }
