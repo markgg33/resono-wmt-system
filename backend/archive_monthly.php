@@ -34,14 +34,15 @@ $conn->begin_transaction();
 try {
     // 1) Copy rows into archive
     $insSql = "
-        INSERT INTO task_logs_archive
-        (original_id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks, archived_month, archived_at)
-        SELECT 
-            tl.id, tl.user_id, tl.work_mode_id, tl.task_description_id, tl.date, tl.start_time, tl.end_time, tl.total_duration, tl.remarks,
-            ?, NOW()
-        FROM task_logs tl
-        WHERE tl.date >= ? AND tl.date < ?
-    ";
+    INSERT INTO task_logs_archive
+    (original_id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks, volume_remark, archived_month, archived_at)
+    SELECT 
+        tl.id, tl.user_id, tl.work_mode_id, tl.task_description_id, tl.date, tl.start_time, tl.end_time, tl.total_duration, tl.remarks, tl.volume_remark,
+        ?, NOW()
+    FROM task_logs tl
+    WHERE tl.date >= ? AND tl.date < ?
+";
+
     $ins = $conn->prepare($insSql);
     $ins->bind_param('sss', $firstDayPrev, $firstDayPrev, $firstDayCurr);
     $ins->execute();

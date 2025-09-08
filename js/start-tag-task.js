@@ -143,6 +143,81 @@ function addRemarksCell(row, taskId, initialRemarks = "") {
 }
 
 // ============================================
+// ========== SAVE VOLUME HELPER ===============
+// ============================================
+
+async function saveVolume(logId) {
+  const input = document.querySelector(`#volume_${logId}`);
+  let volumeValue = input.value.trim();
+
+  if (volumeValue === "") return;
+
+  try {
+    const res = await fetch("../backend/update_volume.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: logId,
+        volume_remark: volumeValue,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      // ✅ Safely handle NaN
+      let formatted = data.volume_remark;
+      if (formatted !== null && formatted !== "" && !isNaN(formatted)) {
+        formatted = parseFloat(formatted).toFixed(2).replace(/\.00$/, ""); // show 5 instead of 5.00
+      } else {
+        formatted = "";
+      }
+
+      input.value = formatted;
+
+      // ✅ add visible feedback like remarks
+      alert("Volume saved.");
+
+      // highlight field
+      input.classList.add("border-success");
+      setTimeout(() => input.classList.remove("border-success"), 1500);
+    } else {
+      alert("Failed to save volume: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Save failed:", err);
+    alert("Network error while saving volume");
+  }
+}
+
+// ============================================
+// ========== ADD VOLUME CELL ===============
+// ============================================
+
+function addVolumeCell(row, taskId, initialVolume = "") {
+  const cell = row.insertCell(7); // after remarks
+  cell.className = "volume-cell";
+  const inputId = `volume_${taskId}`;
+  const btnId = `saveVolumeBtn_${taskId}`;
+
+  cell.innerHTML = `
+      <div class="d-flex gap-1 align-items-center">
+        <input type="number" id="${inputId}" value="${initialVolume}" 
+               class="form-control form-control-sm" 
+               data-task-id="${taskId}" min="0" step="any"/>
+        <button class="btn btn-sm btn-success" id="${btnId}">
+          <i class="fa-solid fa-floppy-disk"></i>
+        </button>
+      </div>
+    `;
+
+  // 🔹 Use your helper here
+  document.getElementById(btnId).addEventListener("click", () => {
+    saveVolume(taskId);
+  });
+}
+
+// ============================================
 // ========== ACTION BUTTONS CELL ===============
 // ============================================
 
@@ -314,6 +389,7 @@ function startTask() {
       if (data.status === "success") {
         newRow.dataset.taskId = data.inserted_id;
         addRemarksCell(newRow, data.inserted_id, remarks);
+        addVolumeCell(newRow, data.inserted_id, "");
         addActionButtonsCell(newRow, {
           id: data.inserted_id,
           date: dbDate,
@@ -385,6 +461,13 @@ function loadExistingLogs() {
         }
 
         addRemarksCell(row, log.id, log.remarks || "");
+        addVolumeCell(
+          row,
+          log.id,
+          log.volume_remark
+            ? parseFloat(log.volume_remark).toFixed(2).replace(/\.00$/, "")
+            : ""
+        );
         //ONE CONTAINER FOR BOTH BUTTONS AMEND AND EDIT
         addActionButtonsCell(row, log);
       });

@@ -1,8 +1,33 @@
 let allUsers = [];
 
+async function loadDepartments() {
+  try {
+    const res = await fetch("../backend/get_departments.php");
+    const data = await res.json();
+
+    const select = document.getElementById("dashDepartmentFilter");
+    if (!select) return;
+
+    // Reset options
+    select.innerHTML = `<option value="">All Departments</option>`;
+
+    data.forEach((dept) => {
+      // Exclude "Unassigned" from dropdown list
+      if (dept.name.toLowerCase() !== "unassigned") {
+        const option = document.createElement("option");
+        option.value = dept.id;
+        option.textContent = dept.name;
+        select.appendChild(option);
+      }
+    });
+  } catch (err) {
+    console.error("Error loading departments:", err);
+  }
+}
+
 async function loadUserStatuses() {
   try {
-    const filter = document.getElementById("departmentFilter")?.value || "";
+    const filter = document.getElementById("dashDepartmentFilter")?.value || "";
     const url = filter
       ? `../backend/get_user_statuses.php?department_id=${filter}`
       : "../backend/get_user_statuses.php";
@@ -98,10 +123,14 @@ document.addEventListener("click", (e) => {
 });
 
 // 🔹 Add event listener for filter change
-document.getElementById("departmentFilter")?.addEventListener("change", () => {
-  loadUserStatuses();
-});
+document
+  .getElementById("dashDepartmentFilter")
+  ?.addEventListener("change", () => {
+    loadUserStatuses();
+  });
 
-// Auto refresh every 5s
-setInterval(loadUserStatuses, 5000);
-loadUserStatuses();
+// Load departments first, then statuses
+loadDepartments().then(() => {
+  loadUserStatuses();
+  setInterval(loadUserStatuses, 5000);
+});
