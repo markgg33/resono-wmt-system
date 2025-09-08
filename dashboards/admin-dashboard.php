@@ -69,7 +69,7 @@ $loggedInUserRole = $_SESSION['role'];
                 <?php
                 $userImage = !empty($_SESSION['profile_image'])
                     ? "../" . $_SESSION['profile_image']
-                    : "../assets/default-avatar.png";
+                    : "../assets/default-avatar.jpg";
                 ?>
                 <img src="<?php echo htmlspecialchars($userImage); ?>"
                     alt="Profile Image"
@@ -82,6 +82,17 @@ $loggedInUserRole = $_SESSION['role'];
             </div>
 
             <ul class="sidebar-list" data-aos="fade-right">
+                <li>
+                    <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#statusSubmenu" role="button" aria-expanded="false" aria-controls="statusSubmenu">
+                        <span><i class="fa-solid fa-gauge"></i>DASHBOARD</span>
+                        <i class="fa-solid fa-caret-down"></i>
+                    </a>
+
+                    <ul class="collapse sidebar-submenu list-unstyled ps-3" id="statusSubmenu">
+                        <li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li>
+                    </ul>
+                </li>
+
                 <li>
                     <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#generalSubmenu" role="button" aria-expanded="false" aria-controls="generalSubmenu">
                         <span><i class="fa-solid fa-house"></i>GENERAL</span>
@@ -147,10 +158,58 @@ $loggedInUserRole = $_SESSION['role'];
 
         <div class="rsn-main-container">
 
+            <!-- DASHBOARD PAGE -->
+            <div id="status-dashboard-page" class="page-content container-fluid">
+                <div class="main-title mb-4 d-flex justify-content-between align-items-center">
+                    <h1 class="fw-bold">STATUS DASHBOARD</h1>
+
+                    <!-- Department Filter -->
+                    <div>
+                        <select id="departmentFilter" class="form-select shadow-sm">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm rounded-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Latest Task</th>
+                                    <th scope="col">Time Tagged</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statusTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Online Users Widget -->
+            <div id="onlineWidget" class="position-fixed bottom-0 end-0 m-3">
+                <!-- Toggle Button -->
+                <button id="onlineToggle" class="btn btn-success rounded-circle shadow p-3">
+                    <i class="fas fa-users fs-4"></i>
+                </button>
+
+                <!-- Online List (hidden by default) -->
+                <div id="onlineUsersPopup"
+                    class="bg-white border rounded-3 shadow p-4 mt-2"
+                    style="display: none; max-height: 300px; width: 260px; overflow-y: auto; position: absolute; bottom: 60px; right: 0;">
+                    <h6 class="fw-bold border-bottom pb-2 mb-2">Online Users</h6>
+                    <ul id="onlineUsersList" class="list-group list-group-flush small"></ul>
+                </div>
+            </div>
+
+
             <!---MY TRACKER PAGE--->
             <div id="my-tracker-page" class="page-content">
                 <div class="main-title">
-                    <h1>MY TRACKER</h1>
+                    <h1 class="fw-bold" >MY TRACKER</h1>
                 </div>
 
                 <div class="rsn-main-cards">
@@ -207,7 +266,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---ADD USERS PAGE--->
             <div id="add-users-page" class="page-content">
                 <div class="main-title">
-                    <h1>ADD USERS</h1>
+                    <h1 class="fw-bold">ADD USERS</h1>
                 </div>
 
                 <div class="card p-4">
@@ -279,7 +338,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---DEPARTMENTS PAGE--->
             <div id="departments-page" class="page-content">
                 <div class="main-title">
-                    <h1>DEPARTMENTS</h1>
+                    <h1 class="fw-bold">DEPARTMENTS</h1>
                 </div>
 
                 <!-- Add Department Form -->
@@ -341,7 +400,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!-- USERS LIST PAGE -->
             <div id="users-list-page" class="page-content">
                 <div class="main-title">
-                    <h1>USERS LIST</h1>
+                    <h1 class="fw-bold">USERS LIST</h1>
                 </div>
 
                 <!-- Department Filter -->
@@ -377,7 +436,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---CREATE WORK MODE PAGE--->
             <div id="create-work-mode-page" class="page-content">
                 <div class="main-title">
-                    <h1>CREATE WORK MODE & TASK</h1>
+                    <h1 class="fw-bold">CREATE WORK MODE & TASK</h1>
                 </div>
 
                 <div class="row">
@@ -462,7 +521,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---MONTHLY SUMMARY PAGE--->
             <div id="monthly-summary-page" class="page-content">
                 <div class="main-title">
-                    <h1>MONTHLY SUMMARY</h1>
+                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
                 </div>
 
                 <div class="filters mb-3 row g-2">
@@ -529,7 +588,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---EDIT PROFILE USER--->
             <div id="edit-profile-page" class="page-content">
                 <div class="main-title">
-                    <h1>EDIT PROFILE</h1>
+                    <h1 class="fw-bold">EDIT PROFILE</h1>
                 </div>
 
                 <div class="profile-card">
@@ -642,7 +701,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---ADMIN REQUEST SECTION--->
             <div id="admin-request-page" class="page-content">
                 <div class="main-title">
-                    <h1>ADMIN REQUESTS</h1>
+                    <h1 class="fw-bold">ADMIN REQUESTS</h1>
                 </div>
                 <table class="table table-striped">
                     <thead>
@@ -671,7 +730,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---ADMIN DTR AMENDMENT USER--->
             <div id="dtr-amendment-page" class="page-content">
                 <div class="main-title">
-                    <h1>DTR AMENDMENT REQUESTS</h1>
+                    <h1 class="fw-bold">DTR AMENDMENT REQUESTS</h1>
                 </div>
                 <table class="table table-striped">
                     <thead>
@@ -689,7 +748,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!-- ADMIN DTR AMENDMENT ARCHIVE -->
             <div id="dtr-amendment-archive-page" class="page-content">
                 <div class="main-title">
-                    <h1>APPROVED & REJECTED DTR REQUESTS</h1>
+                    <h1 class="fw-bold">APPROVED & REJECTED DTR REQUESTS</h1>
                 </div>
                 <table class="table table-striped table-hover">
                     <tr>
@@ -712,7 +771,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---ARCHIVE PAGE--->
             <div id="archive-page" class="page-content">
                 <div class="main-title d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <h1>THE ARCHIVE</h1>
+                    <h1 class="fw-bold">THE ARCHIVE</h1>
                     <div class="d-flex align-items-center gap-2">
                         <select id="archiveYear" class="form-select w-auto"></select>
                         <select id="archiveMonth" class="form-select w-auto"></select>
@@ -785,6 +844,7 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/departments.js"></script>
     <script src="../js/insert-task-in-between.js"></script>
     <script src="../js/assign-dept-wmt.js"></script>
+    <script src="../js/load-statuses.js"></script>
 
 
 

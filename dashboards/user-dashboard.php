@@ -68,7 +68,7 @@ $loggedInUserRole = $_SESSION['role'];
                 <?php
                 $userImage = !empty($_SESSION['profile_image'])
                     ? "../" . $_SESSION['profile_image']
-                    : "../assets/default-avatar.png";
+                    : "../assets/default-avatar.jpg";
                 ?>
                 <img src="<?php echo htmlspecialchars($userImage); ?>"
                     alt="Profile Image"
@@ -127,7 +127,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---MY TRACKER PAGE--->
             <div id="my-tracker-page" class="page-content">
                 <div class="main-title">
-                    <h1>MY TRACKER</h1>
+                    <h1 class="fw-bold">MY TRACKER</h1>
                 </div>
 
                 <div class="rsn-main-cards">
@@ -184,7 +184,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!-- MONTHLY SUMMARY PAGE -->
             <div id="monthly-summary-page" class="page-content">
                 <div class="main-title">
-                    <h1>MONTHLY SUMMARY</h1>
+                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
                 </div>
 
                 <!-- Filters -->
@@ -231,7 +231,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---EDIT PROFILE USER--->
             <div id="edit-profile-page" class="page-content">
                 <div class="main-title">
-                    <h1>EDIT PROFILE</h1>
+                    <h1 class="fw-bold">EDIT PROFILE</h1>
                 </div>
 
                 <div class="profile-card">
@@ -284,7 +284,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 <div class="form-group">
                                     <label>Profile Image</label>
                                     <div class="d-flex align-items-center gap-3">
-                                        <img id="profilePreview" src="../assets/default-avatar.png" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
+                                        <img id="profilePreview" src="../assets/default-avatar.jpg" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
                                         <div class="w-100">
                                             <input type="file" id="edit_profile_image" class="form-control-modern" accept="image/*">
                                             <small class="text-muted">JPEG/PNG/GIF, up to 5MB.</small>
@@ -343,7 +343,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!-- DTR AMENDMENT PAGE -->
             <div id="dtr-amendment-page" class="page-content">
                 <div class="main-title">
-                    <h1>DTR AMENDMENT REQUESTS</h1>
+                    <h1 class="fw-bold">DTR AMENDMENT REQUESTS</h1>
                 </div>
                 <table class="table table-striped">
                     <thead>
@@ -372,7 +372,7 @@ $loggedInUserRole = $_SESSION['role'];
             <!---ARCHIVE PAGE--->
             <div id="archive-page" class="page-content">
                 <div class="main-title d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <h1>THE ARCHIVE</h1>
+                    <h1 class="fw-bold">THE ARCHIVE</h1>
                     <div class="d-flex align-items-center gap-2">
                         <select id="archiveYear" class="form-select w-auto"></select>
                         <select id="archiveMonth" class="form-select w-auto"></select>
