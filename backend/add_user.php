@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetFile = $targetDir . $fileName;
 
         // Allow only image types
-        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
         if (in_array($_FILES['profile_image']['type'], $allowed_types)) {
             if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $targetFile)) {
                 // Save web-accessible relative path

@@ -1,4 +1,5 @@
 <?php
+// WORKING CODE FOR UPDATE PROFILE
 header('Content-Type: application/json');
 session_start();
 require 'connection_db.php';
@@ -28,7 +29,7 @@ if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPL
     $fileName = time() . "_" . preg_replace('/[^A-Za-z0-9._-]/', '_', basename($_FILES['profile_image']['name']));
     $target   = $uploadDir . $fileName;
 
-    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
     $mime = mime_content_type($_FILES['profile_image']['tmp_name']);
 
     if (in_array($mime, $allowed_types)) {

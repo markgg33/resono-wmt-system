@@ -21,13 +21,33 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("edit_last_name").value = data.last_name || "";
       document.getElementById("edit_email").value = data.email || "";
       document.getElementById("edit_role").value = data.role || "";
-      document.getElementById("edit_department").value =
-        data.department_name || "";
+
+      // Load departments dropdown
+      fetch("../backend/get_departments.php")
+        .then((res) => res.json())
+        .then((departments) => {
+          const deptSelect = document.getElementById("edit_department_select");
+          deptSelect.innerHTML = "";
+
+          const defaultOption = document.createElement("option");
+          defaultOption.value = "";
+          defaultOption.textContent = "Select Department";
+          deptSelect.appendChild(defaultOption);
+
+          departments.forEach((dept) => {
+            const option = document.createElement("option");
+            option.value = dept.id;
+            option.textContent = dept.name;
+            deptSelect.appendChild(option);
+          });
+
+          deptSelect.value = data.department_id || "";
+        });
 
       // Show current profile image
       const imgPath = data.profile_image
         ? `../${data.profile_image}`
-        : "../assets/default-avatar.png";
+        : "../assets/default-avatar.jpg";
       previewImg.src = imgPath;
 
       // Lock inputs if role is "user"
@@ -39,8 +59,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "edit_last_name",
       ];
       lockIds.forEach((id) => (document.getElementById(id).disabled = isUser));
+      document.getElementById("edit_department_select").disabled = isUser;
 
-      // Change button text
       submitBtn.textContent = isUser ? "Update Photo" : "Update Profile";
     })
     .catch((err) => {
@@ -57,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Update Profile (with FormData for image)
+// Update Profile
 document
   .getElementById("updateProfileForm")
   .addEventListener("submit", function (e) {
@@ -82,6 +102,10 @@ document
       "employee_id",
       document.getElementById("edit_employee_id").value || ""
     );
+    formData.append(
+      "department_id",
+      document.getElementById("edit_department_select").value || ""
+    );
 
     const fileInput = document.getElementById("edit_profile_image");
     if (fileInput.files.length > 0) {
@@ -105,13 +129,32 @@ document
             nameElement.textContent = data.name;
           }
 
-          // Update sidebar image if changed
+          // Update sidebar image with cache-busting
           if (data.profile_image) {
             const sidebarImg = document.querySelector(
-              ".logout-container img.rounded-circle"
+              ".profile-container img.rounded-circle"
             );
-            if (sidebarImg) sidebarImg.src = "../" + data.profile_image;
+            if (sidebarImg)
+              sidebarImg.src =
+                "../" + data.profile_image + "?t=" + new Date().getTime();
+
+            // Update preview
+            if (previewImg)
+              previewImg.src =
+                "../" + data.profile_image + "?t=" + new Date().getTime();
           }
+
+          // Update Users list row if editing self
+          const userRows = document.querySelectorAll("#usersTable tbody tr");
+          userRows.forEach((row) => {
+            const img = row.querySelector("td img");
+            const nameTd = row.querySelector("td:nth-child(2)");
+            if (img && nameTd && data.id == row.dataset.userId) {
+              img.src =
+                "../" + data.profile_image + "?t=" + new Date().getTime();
+              nameTd.textContent = data.name;
+            }
+          });
         } else {
           msgDiv.innerHTML = `<div class="alert alert-danger">${
             data.error || "Update failed"
