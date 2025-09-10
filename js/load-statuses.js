@@ -70,7 +70,7 @@ function renderTable() {
       <td class="fw-semibold d-flex align-items-center">
         <img src="${user.profile_image}" alt="${user.full_name}"
              class="rounded-circle me-2" width="32" height="32"
-             onerror="this.onerror=null;this.src='assets/default-avatar.jpg';">
+             onerror="this.onerror=null;this.src='../assets/default-avatar.jpg';">
         ${user.full_name}
       </td>
       <td><span class="badge bg-info text-dark">${user.department}</span></td>
@@ -100,7 +100,7 @@ function renderOnlineWidget() {
     li.innerHTML = `
       <img src="${user.profile_image}" alt="${user.full_name}"
            class="rounded-circle me-2" width="28" height="28"
-           onerror="this.onerror=null;this.src='assets/default-avatar.jpg';">
+           onerror="this.onerror=null;this.src='../assets/default-avatar.jpg';">
       <span class="${colorClass} me-2">●</span>
       <span>${user.full_name} <small class="text-muted">(${user.department})</small></span>
     `;

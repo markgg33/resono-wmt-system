@@ -32,7 +32,7 @@ $result = $stmt->get_result();
 if ($row = $result->fetch_assoc()) {
     // Ensure profile_image always has a valid path (fallback)
     if (empty($row['profile_image'])) {
-        $row['profile_image'] = "assets/default-avatar.png";
+        $row['profile_image'] = "/assets/default-avatar.jpg";
     }
     echo json_encode($row);
 } else {

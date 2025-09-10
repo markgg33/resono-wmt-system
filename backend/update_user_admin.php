@@ -37,7 +37,7 @@ if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPL
     $target   = $uploadDir . $fileName;
 
     // Validate file type (only images)
-    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
     if (in_array($_FILES['profile_image']['type'], $allowed_types)) {
         if (move_uploaded_file($fileTmp, $target)) {
             // Save relative path instead of ../uploads

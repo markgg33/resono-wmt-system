@@ -148,39 +148,39 @@ function addRemarksCell(row, taskId, initialRemarks = "") {
 
 async function saveVolume(logId) {
   const input = document.querySelector(`#volume_${logId}`);
-  let volumeValue = input.value.trim();
+  if (!input) return;
 
-  if (volumeValue === "") return;
+  let raw = input.value.trim();
+
+  const payload = {
+    id: logId,
+    volume_remark: raw === "" ? null : raw, // allow empty
+  };
 
   try {
     const res = await fetch("../backend/update_volume.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: logId,
-        volume_remark: volumeValue,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
 
     if (data.status === "success") {
-      // ✅ Safely handle NaN
-      let formatted = data.volume_remark;
-      if (formatted !== null && formatted !== "" && !isNaN(formatted)) {
-        formatted = parseFloat(formatted).toFixed(2).replace(/\.00$/, ""); // show 5 instead of 5.00
-      } else {
-        formatted = "";
+      let formatted = "";
+      if (data.volume_remark !== null && data.volume_remark !== "") {
+        formatted = parseFloat(data.volume_remark)
+          .toFixed(2)
+          .replace(/\.00$/, "");
       }
-
       input.value = formatted;
 
-      // ✅ add visible feedback like remarks
+      // ✅ alert confirmation
       alert("Volume saved.");
 
-      // highlight field
+      // highlight field briefly
       input.classList.add("border-success");
-      setTimeout(() => input.classList.remove("border-success"), 1500);
+      setTimeout(() => input.classList.remove("border-success"), 1200);
     } else {
       alert("Failed to save volume: " + (data.message || "Unknown error"));
     }
