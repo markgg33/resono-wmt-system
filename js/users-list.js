@@ -62,18 +62,34 @@ document.addEventListener("DOMContentLoaded", function () {
         // Attach events
         document.querySelectorAll(".toggleStatus").forEach((toggle) => {
           toggle.addEventListener("change", function () {
+            const userId = this.dataset.id;
+            const newStatus = this.checked ? "active" : "inactive";
+            const confirmMsg = `Are you sure you want to set this user as ${newStatus}?`;
+
+            if (!confirm(confirmMsg)) {
+              // Revert the toggle state if cancelled
+              this.checked = !this.checked;
+              return;
+            }
+
             fetch("../backend/update_user_status.php", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                id: this.dataset.id,
-                status: this.checked ? "active" : "inactive",
-              }),
+              body: JSON.stringify({ id: userId, status: newStatus }),
             })
               .then((res) => res.json())
               .then((data) => {
-                if (!data.success) alert("Failed to update status");
-                loadUsers(departmentId);
+                if (!data.success) {
+                  alert("Failed to update status");
+                  // Revert if backend failed
+                  this.checked = !this.checked;
+                } else {
+                  loadUsers(departmentId); // Refresh list
+                }
+              })
+              .catch((err) => {
+                console.error("Error:", err);
+                this.checked = !this.checked;
               });
           });
         });

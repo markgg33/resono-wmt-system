@@ -38,7 +38,7 @@ http_response_code(403);
         <div class="error-code">403</div>
         <h2>Forbidden</h2>
         <p>You are logged in but don’t have permission to access this page.</p>
-        <a href="../backend/login.php" class="btn btn-success mt-3">Back to Login</a>
+        <a href="../index.php" class="btn btn-success mt-3">Back to Login</a>
     </div>
 </body>
 
