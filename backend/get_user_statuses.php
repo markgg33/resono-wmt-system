@@ -22,9 +22,12 @@ $filter = isset($_GET['department_id']) && $_GET['department_id'] !== '' ? intva
 $where = "WHERE u.is_online = 1"; // only online
 
 if ($role === "client") {
-    // Restrict to specific depts
-    $where .= " AND d.name IN ('Ancillary', 'Fraud Detection')";
+    // Show all departments instead of just Ancillary/Fraud Detection
+    // (or adjust to your real requirement) Maybe add a condition where role is client and department is equals to
+    // the expected department
+    $where .= " AND d.name IS NOT NULL";
 }
+
 
 if ($filter) {
     // If a filter is set, hide unassigned

@@ -51,6 +51,9 @@ $loggedInUserRole = $_SESSION['role'];
         const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
     </script>
 
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 
 </head>
@@ -211,6 +214,42 @@ $loggedInUserRole = $_SESSION['role'];
                     style="display: none; max-height: 300px; width: 260px; overflow-y: auto; position: absolute; bottom: 60px; right: 0;">
                     <h6 class="fw-bold border-bottom pb-2 mb-2">Online Users</h6>
                     <ul id="onlineUsersList" class="list-group list-group-flush small"></ul>
+                </div>
+            </div>
+
+            <!-- DATA VISUALIZATION PAGE -->
+            <div id="data-visualization-page" class="page-content container-fluid py-4">
+                <div class="main-title mb-4 text-center">
+                    <h1 class="fw-bold">DATA VISUALIZATION</h1>
+                </div>
+
+                <div class="row">
+                    <!-- Sidebar Controls -->
+                    <div class="col-md-3">
+                        <h5 class="fw-bold">Departments</h5>
+                        <div id="department-buttons" class="d-flex flex-column gap-2 mb-4"></div>
+
+                        <h5 class="fw-bold">Chart Type</h5>
+                        <button class="btn btn-dark mb-2 chart-toggle" data-type="bar">
+                            <i class="fas fa-chart-bar"></i> Production Hours
+                        </button>
+                        <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
+                            <i class="fas fa-chart-pie"></i> Task Distribution
+                        </button>
+
+                        <div id="month-filter" style="display:none;">
+                            <h5 class="fw-bold">Select Month</h5>
+                            <select id="monthSelector" class="form-select"></select>
+                        </div>
+                    </div>
+
+                    <!-- Chart + Data -->
+                    <div class="col-md-9">
+                        <div class="card shadow p-3 mb-4" style="height: 500px;">
+                            <canvas id="visualizationChart"></canvas>
+                        </div>
+                        <div id="taskList" class="card shadow p-3"></div>
+                    </div>
                 </div>
             </div>
 
@@ -834,6 +873,7 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/edit-department-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/data-visualization.js"></script>
     <script src="../js/admin-request-render.js"></script>
     <script src="../js/admin-amendments.js"></script>
     <script src="../js/edit-profile.js"></script>
@@ -856,9 +896,6 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/insert-task-in-between.js"></script>
     <script src="../js/assign-dept-wmt.js"></script>
     <script src="../js/load-statuses.js"></script>
-
-
-
 
     <script>
         function confirmRegistration() {
