@@ -1,5 +1,5 @@
 <?php
-file_put_contents("debug_update_calls.txt", json_encode($_POST) . PHP_EOL, FILE_APPEND);
+//REMOVED DEBUG UPDATE CALLS FROM DEBUGGING
 require 'connection_db.php';
 header('Content-Type: application/json');
 

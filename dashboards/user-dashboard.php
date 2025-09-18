@@ -190,6 +190,22 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
+            <!-- Floating Online Users Widget -->
+            <div id="onlineWidget" class="position-fixed bottom-0 end-0 m-3">
+                <!-- Toggle Button -->
+                <button id="onlineToggle" class="btn btn-success rounded-circle shadow p-3">
+                    <i class="fas fa-users fs-4"></i>
+                </button>
+
+                <!-- Online List (hidden by default) -->
+                <div id="onlineUsersPopup"
+                    class="bg-white border rounded-3 shadow p-4 mt-2"
+                    style="display: none; max-height: 300px; width: 260px; overflow-y: auto; position: absolute; bottom: 60px; right: 0;">
+                    <h6 class="fw-bold border-bottom pb-2 mb-2">Online Users</h6>
+                    <ul id="onlineUsersList" class="list-group list-group-flush small"></ul>
+                </div>
+            </div>
+
             <!-- MONTHLY SUMMARY PAGE -->
             <div id="monthly-summary-page" class="page-content">
                 <div class="main-title">
@@ -429,6 +445,7 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/edit-request-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/load-statuses.js"></script>
     <script src="../js/start-tag-task.js"></script>
     <script src="../js/user-amendments.js"></script>
     <script src="../js/create-work-mode.js"></script>
@@ -443,7 +460,8 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/user-requests.js"></script>
     <script src="../js/archive.js"></script>
     <script src="../js/user-request-render.js"></script>
-    <script src="../js/insert-task-in-between.js"></script>
+
+    <!---script src="../js/insert-task-in-between.js"></script--->
 
 
     <script>

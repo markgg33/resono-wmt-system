@@ -19,6 +19,18 @@ if (!in_array($_SESSION['role'], $allowedRoles)) {
 }
 
 $loggedInUserRole = $_SESSION['role'];
+$userId = $_SESSION['user_id'];
+
+// If supervisor, fetch their department assignment
+$supervisorDeptId = null;
+if ($loggedInUserRole === 'supervisor') {
+    $stmt = $conn->prepare("SELECT department_id FROM users WHERE id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $stmt->bind_result($supervisorDeptId);
+    $stmt->fetch();
+    $stmt->close();
+}
 
 ?>
 
@@ -48,6 +60,7 @@ $loggedInUserRole = $_SESSION['role'];
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
         sessionStorage.setItem("userRole", "<?php echo $_SESSION['role']; ?>");
+        const supervisorDeptId = "<?= $supervisorDeptId ?? '' ?>";
         const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
     </script>
 
@@ -69,7 +82,7 @@ $loggedInUserRole = $_SESSION['role'];
                 <h5 id="live-date" class="fw-bold"></h5>
                 <h6 id="live-time" class="text-muted"></h6>
             </div>
-            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout" data-bs-toggle="tooltip" data-bs-placement="top" title="Logout button"><i class="fa-solid fa-right-from-bracket"></i></button></a>
         </header>
 
         <!---SIDEBAR--->
@@ -101,7 +114,12 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="statusSubmenu">
                         <li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li>
-                        <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">Data Visualization</li>
+                        <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive'): ?>
+                            <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">
+                                Data Visualization
+                            </li>
+                        <?php endif; ?>
+
                     </ul>
                 </li>
 
@@ -175,12 +193,14 @@ $loggedInUserRole = $_SESSION['role'];
                 <div class="main-title mb-4 d-flex justify-content-between align-items-center">
                     <h1 class="fw-bold">STATUS DASHBOARD</h1>
 
-                    <!-- Department Filter -->
-                    <div>
-                        <select id="dashDepartmentFilter" class="form-select shadow-sm">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
+                    <?php if ($loggedInUserRole !== 'supervisor'): ?>
+                        <!-- Department Filter (all except supervisor can filter all depts) -->
+                        <div>
+                            <select id="dashDepartmentFilter" class="form-select shadow-sm">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="card shadow-sm rounded-3">
@@ -201,6 +221,44 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
+            <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive'): ?>
+                <!-- DATA VISUALIZATION (admins & executives only) -->
+                <div id="data-visualization-page" class="page-content container-fluid py-4">
+                    <div class="main-title mb-4 text-center">
+                        <h1 class="fw-bold">DATA VISUALIZATION</h1>
+                    </div>
+
+                    <div class="row">
+                        <!-- Sidebar Controls -->
+                        <div class="col-md-3">
+                            <h5 class="fw-bold">Departments</h5>
+                            <div id="department-buttons" class="d-flex flex-column gap-2 mb-4"></div>
+
+                            <h5 class="fw-bold">Chart Type</h5>
+                            <button class="btn btn-dark mb-2 chart-toggle" data-type="bar">
+                                <i class="fas fa-chart-bar"></i> Production Hours
+                            </button>
+                            <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
+                                <i class="fas fa-chart-pie"></i> Task Distribution
+                            </button>
+
+                            <div id="month-filter" style="display:none;">
+                                <h5 class="fw-bold">Select Month</h5>
+                                <select id="monthSelector" class="form-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- Chart + Data -->
+                        <div class="col-md-9">
+                            <div class="card shadow p-3 mb-4" style="height: 500px;">
+                                <canvas id="visualizationChart"></canvas>
+                            </div>
+                            <div id="taskList" class="card shadow p-3"></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Floating Online Users Widget -->
             <div id="onlineWidget" class="position-fixed bottom-0 end-0 m-3">
                 <!-- Toggle Button -->
@@ -216,43 +274,6 @@ $loggedInUserRole = $_SESSION['role'];
                     <ul id="onlineUsersList" class="list-group list-group-flush small"></ul>
                 </div>
             </div>
-
-            <!-- DATA VISUALIZATION PAGE -->
-            <div id="data-visualization-page" class="page-content container-fluid py-4">
-                <div class="main-title mb-4 text-center">
-                    <h1 class="fw-bold">DATA VISUALIZATION</h1>
-                </div>
-
-                <div class="row">
-                    <!-- Sidebar Controls -->
-                    <div class="col-md-3">
-                        <h5 class="fw-bold">Departments</h5>
-                        <div id="department-buttons" class="d-flex flex-column gap-2 mb-4"></div>
-
-                        <h5 class="fw-bold">Chart Type</h5>
-                        <button class="btn btn-dark mb-2 chart-toggle" data-type="bar">
-                            <i class="fas fa-chart-bar"></i> Production Hours
-                        </button>
-                        <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
-                            <i class="fas fa-chart-pie"></i> Task Distribution
-                        </button>
-
-                        <div id="month-filter" style="display:none;">
-                            <h5 class="fw-bold">Select Month</h5>
-                            <select id="monthSelector" class="form-select"></select>
-                        </div>
-                    </div>
-
-                    <!-- Chart + Data -->
-                    <div class="col-md-9">
-                        <div class="card shadow p-3 mb-4" style="height: 500px;">
-                            <canvas id="visualizationChart"></canvas>
-                        </div>
-                        <div id="taskList" class="card shadow p-3"></div>
-                    </div>
-                </div>
-            </div>
-
 
             <!---MY TRACKER PAGE--->
             <div id="my-tracker-page" class="page-content">
@@ -312,6 +333,75 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
+            <!---MONTHLY SUMMARY PAGE--->
+            <div id="monthly-summary-page" class="page-content">
+                <div class="main-title">
+                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
+                </div>
+
+                <div class="filters mb-3 row g-2">
+                    <div class="col-md-3">
+                        <label for="userDropdown">Select User</label>
+                        <select id="userDropdown" class="form-select">
+                            <option value="">-- Select User --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="summaryDepartmentFilter">Select Department</label>
+                        <select class="form-select" id="summaryDepartmentFilter">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for=""></label>
+                        <button class="btn btn-success w-100" onclick="loadMonthlySummary()">Search</button>
+                    </div>
+                </div>
+
+
+
+                <!-- Search Result List -->
+                <div id="searchResults" class="my-3"></div>
+
+                <!-- Table -->
+                <div id="summaryTableWrapper" class="table-responsive" style="display:none;">
+                    <table class="table table-bordered table-striped" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Login</th>
+                                <th>Logout</th>
+                                <th>Total Time</th>
+                                <th>Production</th>
+                                <th>Offphone</th>
+                                <th>Training</th>
+                                <th>Resono Function</th>
+                                <th>Paid Break</th>
+                                <th>Unpaid Break</th>
+                                <th>Personal Time</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <!-- Export Button -->
+                <div class="text-end mt-3">
+                    <button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
+                        📄 Export to PDF
+                    </button>
+                    <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
+                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department (ZIP)</button>
+                </div>
+            </div>
+
             <!---ADD USERS PAGE--->
             <div id="add-users-page" class="page-content">
                 <div class="main-title">
@@ -359,7 +449,7 @@ $loggedInUserRole = $_SESSION['role'];
                                     <option value="admin">Admin</option>
                                     <option value="executive">Executive</option>
                                     <option value="hr">HR</option>
-                                    <option value="user">User</option>
+                                    <option value="user">Employee</option>
                                     <option value="client">Client</option>
                                     <option value="supervisor">Supervisor</option>
                                 </select>
@@ -565,73 +655,6 @@ $loggedInUserRole = $_SESSION['role'];
 
 
                 <?php include "../modals/wmt-success-modal.php"; ?>
-            </div>
-
-            <!---MONTHLY SUMMARY PAGE--->
-            <div id="monthly-summary-page" class="page-content">
-                <div class="main-title">
-                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
-                </div>
-
-                <div class="filters mb-3 row g-2">
-                    <div class="col-md-3">
-                        <label for="searchUser">Search User</label>
-                        <input type="text" id="searchUser" placeholder="Search User" class="form-control" />
-                    </div>
-                    <div class="col-md-2">
-                        <label for="startDate">Start Date</label>
-                        <input type="date" id="startDate" class="form-control" />
-                    </div>
-                    <div class="col-md-2">
-                        <label for="endDate">End Date</label>
-                        <input type="date" id="endDate" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                        <label for="summaryDepartmentFilter">Select Department</label>
-                        <select class="form-select" id="summaryDepartmentFilter">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for=""></label>
-                        <button class="btn btn-success w-100" onclick="searchUsers()">Search</button>
-                    </div>
-                </div>
-
-
-
-                <!-- Search Result List -->
-                <div id="searchResults" class="my-3"></div>
-
-                <!-- Table -->
-                <div id="summaryTableWrapper" class="table-responsive" style="display:none;">
-                    <table class="table table-bordered table-striped" id="summaryTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Login</th>
-                                <th>Logout</th>
-                                <th>Total Time</th>
-                                <th>Production</th>
-                                <th>Offphone</th>
-                                <th>Training</th>
-                                <th>Resono Function</th>
-                                <th>Paid Break</th>
-                                <th>Unpaid Break</th>
-                                <th>Personal Time</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <!-- Export Button -->
-                <div class="text-end mt-3">
-                    <button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
-                        📄 Export to PDF
-                    </button>
-                    <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
-                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department (ZIP)</button>
-                </div>
             </div>
 
             <!---EDIT PROFILE USER--->
