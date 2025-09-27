@@ -1,56 +1,44 @@
-//=====SEARCH USER FOR ADMIN===//
+//====NEW DROPDOWN FOR SEARCHING USERS===//
 
 let selectedUser = null;
 
-function searchUsers() {
-  const query = document.getElementById("searchUser").value.trim();
-  const searchResults = document.getElementById("searchResults");
-  const tableWrapper = document.getElementById("summaryTableWrapper");
-  tableWrapper.style.display = "none";
+function loadUsersByDepartment(deptId) {
+  const userDropdown = document.getElementById("userDropdown");
+  if (!userDropdown) return;
+  userDropdown.innerHTML = `<option value="">-- Select User --</option>`;
   selectedUser = null;
+  if (!deptId) return;
 
-  if (!query) {
-    searchResults.innerHTML = `<div class="text-danger">Please enter a name.</div>`;
-    return;
-  }
-
-  searchResults.innerHTML = `<div class="text-muted">Searching...</div>`;
-
-  fetch(`../backend/search_users.php?query=${encodeURIComponent(query)}`)
+  fetch(
+    `../backend/get_users_by_department.php?department_id=${encodeURIComponent(
+      deptId
+    )}`
+  )
     .then((res) => res.json())
     .then((users) => {
-      if (users.length === 0) {
-        searchResults.innerHTML = `<div class="text-warning">No matching users found.</div>`;
+      if (!Array.isArray(users) || users.length === 0) {
+        userDropdown.innerHTML = `<option value="">No users found</option>`;
         return;
       }
-
-      const listHTML = users
-        .map(
-          (user) => `
-            <div class="card my-1 user-result shadow-sm" style="cursor: pointer;" 
-                 onclick="selectUser(${user.id}, '${user.name.replace(
-            /'/g,
-            "\\'"
-          )}')">
-              <div class="card-body p-2">
-                <strong>${user.name}</strong>
-              </div>
-            </div>`
-        )
-        .join("");
-
-      searchResults.innerHTML =
-        `<div class="mb-2 text-muted">Select a user to view summary:</div>` +
-        listHTML;
+      users.forEach((user) => {
+        userDropdown.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+      });
     })
     .catch(() => {
-      searchResults.innerHTML = `<div class="text-danger">Error loading users.</div>`;
+      userDropdown.innerHTML = `<option value="">Error loading users</option>`;
     });
 }
 
-function selectUser(userId, userName) {
-  selectedUser = { id: userId, name: userName };
-  loadMonthlySummary();
+// NEW USER SELECTION
+function handleUserSelection() {
+  const dropdown = document.getElementById("userDropdown");
+  const userId = dropdown.value;
+  const userName = dropdown.options[dropdown.selectedIndex]?.text;
+  if (userId) {
+    selectedUser = { id: userId, name: userName };
+  } else {
+    selectedUser = null;
+  }
 }
 
 function loadSummaryDepartments() {
@@ -67,9 +55,21 @@ function loadSummaryDepartments() {
     .catch((err) => console.error("Error loading summary departments:", err));
 }
 
-// Run this when the summary page is shown
+// NEW DOM FOR THE DROPDOWN
 document.addEventListener("DOMContentLoaded", function () {
   loadSummaryDepartments();
+
+  const deptFilter = document.getElementById("summaryDepartmentFilter");
+  if (deptFilter) {
+    deptFilter.addEventListener("change", function () {
+      loadUsersByDepartment(this.value);
+    });
+  }
+
+  const userDropdown = document.getElementById("userDropdown");
+  if (userDropdown) {
+    userDropdown.addEventListener("change", handleUserSelection);
+  }
 });
 
 //=====LOAD MONTHLY SUMMARY FUNCTION===//
@@ -83,7 +83,7 @@ function loadMonthlySummary() {
   let url = "../backend/get_monthly_summary.php";
   let params = [];
 
-  if (["admin", "hr", "executive"].includes(userRole)) {
+  if (["admin", "hr", "executive", "supervisor"].includes(userRole)) {
     // 🔹 Admins use date range
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
@@ -104,8 +104,9 @@ function loadMonthlySummary() {
     params.push(`month=${month}`);
   }
 
-  if (selectedUser?.name) {
-    params.push(`search=${encodeURIComponent(selectedUser.name)}`);
+  // NEW SELECT USER FUNCTION
+  if (selectedUser?.id) {
+    params.push(`user_id=${encodeURIComponent(selectedUser.id)}`);
   }
 
   url += "?" + params.join("&");
@@ -263,7 +264,7 @@ if (exportCSVBtn) {
       )}`;
       let filename;
 
-      if (["admin", "hr", "executive"].includes(userRole)) {
+      if (["admin", "hr", "executive", "supervisor"].includes(userRole)) {
         // admin/HR/executive use date range
         const start = document.getElementById("startDate").value;
         const end = document.getElementById("endDate").value;
@@ -300,7 +301,7 @@ if (exportCSVBtn) {
   });
 }
 
-/* === EXPORT DEPARTMENT (ZIP of CSVs) === */
+/* === EXPORT DEPARTMENT (CSV Only) === REVISED*/
 const exportDeptCSVBtn = document.getElementById("exportDeptCSVBtn");
 if (exportDeptCSVBtn) {
   exportDeptCSVBtn.addEventListener("click", async () => {
@@ -312,12 +313,12 @@ if (exportDeptCSVBtn) {
 
     const overlay = showLoadingOverlay();
     try {
-      let url = `../backend/export_department_zip.php?department=${encodeURIComponent(
+      let url = `../backend/export_department_csv.php?department=${encodeURIComponent(
         deptId
       )}`;
       let filename;
 
-      if (["admin", "hr", "executive"].includes(userRole)) {
+      if (["admin", "hr", "executive", "supervisor"].includes(userRole)) {
         const start = document.getElementById("startDate").value;
         const end = document.getElementById("endDate").value;
         if (!start || !end) {
@@ -328,13 +329,13 @@ if (exportDeptCSVBtn) {
         url += `&start=${encodeURIComponent(start)}&end=${encodeURIComponent(
           end
         )}`;
-        filename = `Department_${safeFilename(deptId)}_${start}_to_${end}.zip`;
+        filename = `Department_${safeFilename(deptId)}_${start}_to_${end}.csv`;
       } else {
         const month =
           document.getElementById("monthFilter").value ||
           new Date().toISOString().slice(0, 7);
         url += `&month=${encodeURIComponent(month)}`;
-        filename = `Department_${safeFilename(deptId)}_MTD_${month}.zip`;
+        filename = `Department_${safeFilename(deptId)}_MTD_${month}.csv`;
       }
 
       const res = await fetch(url);
@@ -342,8 +343,8 @@ if (exportDeptCSVBtn) {
       const blob = await res.blob();
       downloadBlob(blob, filename);
     } catch (err) {
-      console.error("Error exporting department ZIP:", err);
-      alert("Error exporting Department ZIP. Check server logs for details.");
+      console.error("Error exporting department CSV:", err);
+      alert("Error exporting Department CSV. Check server logs for details.");
     } finally {
       hideLoadingOverlay(overlay);
     }
@@ -360,7 +361,9 @@ function exportMonthlySummaryToPDF() {
   let periodLabel = "";
   let filename = "";
 
-  const isAdminLike = ["admin", "hr", "executive"].includes(userRole);
+  const isAdminLike = ["admin", "hr", "executive", "supervisor"].includes(
+    userRole
+  );
   if (isAdminLike) {
     const start = document.getElementById("startDate").value;
     const end = document.getElementById("endDate").value;

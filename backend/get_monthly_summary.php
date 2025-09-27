@@ -5,9 +5,10 @@ header('Content-Type: application/json');
 
 $userId = $_SESSION['user_id'] ?? null;
 $role = $_SESSION['role'] ?? '';
-$canSearchOthers = in_array($role, ['admin', 'hr', 'executive']);
+$canSearchOthers = in_array($role, ['admin', 'hr', 'executive','supervisor']); //ADD SUPERVISOR FOR NOW 
 
-$search = $_GET['search'] ?? '';
+// NEW: read user_id directly from dropdown
+$targetUserId = $_GET['user_id'] ?? null;
 
 if (!$userId) {
     echo json_encode(['status' => 'error', 'message' => 'Not logged in']);
@@ -25,18 +26,21 @@ if (isset($_GET['start'], $_GET['end']) && $canSearchOthers) {
 }
 
 // 🔹 Determine target user
-if ($canSearchOthers && $search !== '') {
-    $stmt = $conn->prepare("SELECT id FROM users WHERE CONCAT(first_name, ' ', last_name) LIKE CONCAT('%', ?, '%') LIMIT 1");
-    $stmt->bind_param("s", $search);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $targetUser = $res->fetch_assoc();
-    if (!$targetUser) {
-        echo json_encode(['status' => 'success', 'summary' => [], 'mtd' => []]);
+if ($canSearchOthers) {
+    if ($targetUserId) {
+        // Admin/HR/Exec can view others
+        $userId = (int)$targetUserId;
+    } else {
+        // No user selected → return empty response
+        echo json_encode([
+            'status' => 'success',
+            'summary' => [],
+            'mtd' => []
+        ]);
         exit;
     }
-    $userId = $targetUser['id'];
 }
+// else → keep $userId as the logged-in user
 
 // ✅ Explicit column alignment for UNION
 $logsQuery = "

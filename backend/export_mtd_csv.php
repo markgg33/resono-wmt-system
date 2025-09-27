@@ -2,16 +2,15 @@
 session_start();
 require_once "connection_db.php";
 
-// === Input validation ===
-if (!isset($_GET['user_id'])) {
-    http_response_code(400);
-    echo "Missing user_id.";
-    exit;
+// --- Check role ---
+if (!isset($_SESSION['role']) || !isset($_SESSION['user_id'])) {
+    http_response_code(403);
+    exit("Unauthorized");
 }
 
-$userId = intval($_GET['user_id']);
+$userId = (int)$_SESSION['user_id'];
 
-// Accept either ?month=YYYY-MM OR ?start&end
+// === Input validation ===
 if (!empty($_GET['month'])) {
     $month = $_GET['month'];
     $monthStart = "$month-01";
@@ -26,187 +25,125 @@ if (!empty($_GET['month'])) {
     exit;
 }
 
-// === Fetch user info (name + department) ===
+// --- Get user info & departments ---
 $stmt = $conn->prepare("
-    SELECT u.first_name, u.middle_name, u.last_name, d.name AS department 
-    FROM users u 
-    LEFT JOIN departments d ON u.department_id = d.id 
+    SELECT u.first_name, u.middle_name, u.last_name,
+           GROUP_CONCAT(d.name SEPARATOR ', ') AS deptNames
+    FROM users u
+    LEFT JOIN user_departments ud ON u.id = ud.user_id
+    LEFT JOIN departments d ON ud.department_id = d.id
     WHERE u.id = ?
+    GROUP BY u.id
+    LIMIT 1
 ");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
-$userInfo = $stmt->get_result()->fetch_assoc();
+$row = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-$userName = trim($userInfo['first_name'] . " " . ($userInfo['middle_name'] ?? "") . " " . $userInfo['last_name']);
-$department = $userInfo['department'] ?? "N/A";
-
-// === Fetch logs (active + archive) ===
-$logsQuery = "
-  SELECT id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
-  FROM task_logs
-  WHERE user_id = ? AND date BETWEEN ? AND ?
-  UNION ALL
-  SELECT original_id AS id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
-  FROM task_logs_archive
-  WHERE user_id = ? AND date BETWEEN ? AND ?
-  ORDER BY date ASC, start_time ASC
-";
-
-$stmt = $conn->prepare($logsQuery);
-$stmt->bind_param("ississ", $userId, $monthStart, $monthEnd, $userId, $monthStart, $monthEnd);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$dailyLogs = [];
-while ($row = $result->fetch_assoc()) {
-    $dailyLogs[$row['date']][] = $row;
+if (!$row) {
+    http_response_code(404);
+    echo "User not found.";
+    exit;
 }
 
-// === Summarize like API ===
-$summary = [];
-$totals = [
-    'total'         => 0,
-    'production'    => 0,
-    'offphone'      => 0,
-    'training'      => 0,
-    'resono'        => 0,
-    'paid_break'    => 0,
-    'unpaid_break'  => 0,
-    'personal_time' => 0
-];
+$userName  = trim($row['first_name'] . ' ' . ($row['middle_name'] ?? '') . ' ' . $row['last_name']);
+$deptNames = $row['deptNames'] ?: "Unknown"; // may be multi-department
 
-foreach ($dailyLogs as $date => $logs) {
-    $login  = null;
-    $logout = null;
-    $usedPaidBreak = 0;
-    $usedUnpaidBreak = 0;
+// --- Get logs ---
+$logs = getLogs($conn, $userId, $monthStart, $monthEnd);
 
-    foreach ($logs as $log) {
-        if (!$login && $log['start_time']) $login = $log['start_time'];
-        if ($log['end_time']) $logout = $log['end_time'];
-    }
-
-    $totalTime = ($logout) ? strtotime($logout) - strtotime($login) : 0;
-
-    $durations = [
-        'production'   => 0,
-        'offphone'     => 0,
-        'training'     => 0,
-        'resono'       => 0,
-        'paid_break'   => 0,
-        'unpaid_break' => 0,
-        'personal_time' => 0
-    ];
-
-    foreach ($logs as $log) {
-        if (!$log['end_time']) continue;
-        $duration = strtotime($log['end_time']) - strtotime($log['start_time']);
-        if ($duration <= 0) continue;
-
-        $desc = strtolower($log['task_description_id'] ? getDescription($conn, $log['task_description_id']) : '');
-        $workModeId = $log['work_mode_id'];
-
-        if (strpos($desc, 'resono') !== false) {
-            $durations['resono'] += $duration;
-        } elseif (strpos($desc, 'training') !== false) {
-            $durations['training'] += $duration;
-        } elseif (strpos($desc, 'offphone') !== false) {
-            $durations['offphone'] += $duration;
-        } elseif (strpos($desc, 'away - break') !== false) {
-            allocateAwayBreakDuration($duration, $durations, $usedPaidBreak, $usedUnpaidBreak);
-        } else {
-            if ($workModeId == 1) {
-                $durations['production'] += $duration;
-            }
-        }
-    }
-
-    $summary[] = [
-        'date'          => $date,
-        'login'         => $login ?? '--',
-        'logout'        => $logout ?? '--',
-        'total'         => formatDuration($totalTime),
-        'production'    => formatDuration($durations['production']),
-        'offphone'      => formatDuration($durations['offphone']),
-        'training'      => formatDuration($durations['training']),
-        'resono'        => formatDuration($durations['resono']),
-        'paid_break'    => formatDuration($durations['paid_break']),
-        'unpaid_break'  => formatDuration($durations['unpaid_break']),
-        'personal_time' => formatDuration($durations['personal_time']),
-    ];
-
-    $totals['total']         += $totalTime;
-    $totals['production']    += $durations['production'];
-    $totals['offphone']      += $durations['offphone'];
-    $totals['training']      += $durations['training'];
-    $totals['resono']        += $durations['resono'];
-    $totals['paid_break']    += $durations['paid_break'];
-    $totals['unpaid_break']  += $durations['unpaid_break'];
-    $totals['personal_time'] += $durations['personal_time'];
+// --- Start CSV ---
+$fh = fopen("php://output", "w");
+if ($fh === false) {
+    http_response_code(500);
+    echo "Unable to open output stream.";
+    exit;
 }
 
-// === Output CSV ===
-header("Content-Type: text/csv");
-header("Content-Disposition: attachment; filename=MTD_User_${userId}_${month}.csv");
+$filename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $userName) . "_MTD_{$month}.csv";
 
-$out = fopen("php://output", "w");
-fputcsv($out, ["User", $userName]);
-fputcsv($out, ["Department", $department]);
-fputcsv($out, []);
-fputcsv($out, ["Date", "Login", "Logout", "Total", "Production", "Offphone", "Training", "Resono", "Paid Break", "Unpaid Break", "Personal Time"]);
-
-foreach ($summary as $row) {
-    fputcsv($out, $row);
+// Force download headers
+while (ob_get_level()) {
+    ob_end_clean();
 }
+header('Content-Type: text/csv');
+header("Content-Disposition: attachment; filename=\"$filename\"");
 
-fputcsv($out, [
-    "TOTALS",
-    "",
-    "",
-    formatDuration($totals['total']),
-    formatDuration($totals['production']),
-    formatDuration($totals['offphone']),
-    formatDuration($totals['training']),
-    formatDuration($totals['resono']),
-    formatDuration($totals['paid_break']),
-    formatDuration($totals['unpaid_break']),
-    formatDuration($totals['personal_time'])
+// --- CSV Header ---
+fputcsv($fh, [
+    "AGENT",
+    "DATE",
+    "TASK DESC",
+    "TIME START",
+    "TIME END",
+    "TOTAL TIME SPENT",
+    "REMARK",
+    "VOLUME",
+    "LOB",
+    "WEEK ENDING",
+    "BILLING CATEGORY"
 ]);
 
-fclose($out);
-exit;
+// --- CSV Rows ---
+foreach ($logs as $log) {
+    $desc = getDescription($conn, $log['task_description_id']);
+    if (stripos($desc, "end shift") !== false) continue;
 
-// === Helpers ===
-function formatDuration($seconds)
-{
-    $h = floor($seconds / 3600);
-    $m = floor(($seconds % 3600) / 60);
-    return str_pad($h, 2, "0", STR_PAD_LEFT) . ":" . str_pad($m, 2, "0", STR_PAD_LEFT);
+    // Normalize for away-break detection
+    $normalizedDesc = strtolower(trim($desc));
+    if (
+        strpos($normalizedDesc, "away-break") !== false ||
+        strpos($normalizedDesc, "away break") !== false ||
+        strpos($normalizedDesc, "away - break") !== false ||
+        strpos($normalizedDesc, "awaybreak") !== false
+    ) {
+        $billingCategory = "Non-Billable";
+    } else {
+        $billingCategory = $deptNames;
+    }
+
+    $weekEnding = getWeekEndingSunday($log['date']);
+
+    fputcsv($fh, [
+        $userName,
+        $log['date'],
+        $desc,
+        $log['start_time'],
+        $log['end_time'],
+        $log['total_duration'],   // ✅ TOTAL TIME SPENT
+        $log['remarks'] ?? '',
+        '', // Volume placeholder
+        $deptNames,   // LOB
+        $weekEnding,
+        $billingCategory
+    ]);
 }
 
-function allocateAwayBreakDuration($duration, &$durations, &$usedPaidBreak, &$usedUnpaidBreak)
+fclose($fh);
+exit;
+
+
+// === Shared helpers ===
+function getLogs($conn, $userId, $monthStart, $monthEnd)
 {
-    $remaining = $duration;
-    $remainingPaid = max(0, 1800 - $usedPaidBreak);
-    if ($remainingPaid > 0) {
-        $paid = min($remaining, $remainingPaid);
-        $durations['paid_break'] += $paid;
-        $usedPaidBreak += $paid;
-        $remaining -= $paid;
-    }
-    if ($remaining > 0) {
-        $remainingUnpaid = max(0, 3600 - $usedUnpaidBreak);
-        if ($remainingUnpaid > 0) {
-            $unpaid = min($remaining, $remainingUnpaid);
-            $durations['unpaid_break'] += $unpaid;
-            $usedUnpaidBreak += $unpaid;
-            $remaining -= $unpaid;
-        }
-    }
-    if ($remaining > 0) {
-        $durations['personal_time'] += $remaining;
-    }
+    $logsQuery = "
+      SELECT id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+      FROM task_logs
+      WHERE user_id = ? AND date BETWEEN ? AND ?
+      UNION ALL
+      SELECT original_id AS id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+      FROM task_logs_archive
+      WHERE user_id = ? AND date BETWEEN ? AND ?
+      ORDER BY date ASC, start_time ASC
+    ";
+    $stmt = $conn->prepare($logsQuery);
+    $stmt->bind_param("ississ", $userId, $monthStart, $monthEnd, $userId, $monthStart, $monthEnd);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $logs = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    return $logs;
 }
 
 function getDescription($conn, $descId)
@@ -218,6 +155,18 @@ function getDescription($conn, $descId)
     $stmt->execute();
     $res = $stmt->get_result();
     $desc = $res->fetch_assoc()['description'] ?? '';
+    $stmt->close();
     $cache[$descId] = $desc;
     return $desc;
+}
+
+function getWeekEndingSunday($date)
+{
+    $ts = strtotime($date);
+    $dow = date("w", $ts); // 0=Sunday, 6=Saturday
+    if ($dow == 0) {
+        return date("Y-m-d", $ts);
+    } else {
+        return date("Y-m-d", strtotime("next Sunday", $ts));
+    }
 }
