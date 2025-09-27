@@ -20,6 +20,7 @@
                         <select id="field" name="field" class="form-select" required>
                             <option value="start_time">Start Time</option>
                             <option value="end_time">End Time</option>
+                            <option value="date">Date</option> <!-- NEW -->
                             <option value="remarks">Remarks</option>
                         </select>
                     </div>
@@ -31,8 +32,11 @@
 
                     <div class="mb-3">
                         <label>New Value</label>
-                        <input type="text" id="newValue" name="new_value" class="form-control" required>
+                        <div id="newValueWrapper">
+                            <input type="text" id="newValue" name="new_value" class="form-control" required>
+                        </div>
                     </div>
+
 
                     <div class="mb-3">
                         <label>Reason</label>

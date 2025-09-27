@@ -40,7 +40,6 @@
   padding-top: 30px;
 }
 
-
 #live-date {
   margin-top: 10px;
   color: #093d02;
@@ -383,9 +382,18 @@
   background: #d48a1c;
 }
 
-.staging-badge{
+.staging-badge {
   padding: 10px;
   border-radius: 10px;
   background-color: rgb(182, 12, 12);
+  color: white;
+}
+
+#onlineWidget {
+  z-index: 9999;
+}
+
+#department-buttons .btn.active {
+  background-color: #198754;
   color: white;
 }

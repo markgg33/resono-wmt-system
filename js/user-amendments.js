@@ -1,41 +1,4 @@
 $(document).ready(function () {
-  /* Load user logs
-  function loadUserLogs() {
-    $.get(
-      "../backend/get_user_task_logs.php",
-      function (data) {
-        if (data.status === "success") {
-          let rows = "";
-          data.logs.forEach((log) => {
-            rows += `
-                        <tr>
-                            <td>${log.date}</td>
-                            <td>${log.task_description}</td>
-                            <td>${log.start_time || "--"}</td>
-                            <td>${log.end_time || "--"}</td>
-                            <td>${log.computed_duration}</td>
-                            <td>${log.remarks || "--"}</td>
-                            <td>
-                                <button class="btn btn-warning btn-sm request-amendment-btn"
-                                    data-id="${log.id}"
-                                    data-date="${log.date}"
-                                    data-old-start="${log.start_time || ""}"
-                                    data-old-end="${log.end_time || ""}"
-                                    data-old-remarks="${log.remarks || ""}">
-                                    Request Amendment
-                                </button>
-                            </td>
-                        </tr>`;
-          });
-          $("#user-logs-table").html(rows);
-        }
-      },
-      "json"
-    );
-  }
-
-  loadUserLogs();*/
-
   // Open modal
   $(document).on("click", ".request-amendment-btn", function () {
     $("#logId").val($(this).data("id"));
@@ -48,14 +11,54 @@ $(document).ready(function () {
     $("#userAmendmentModal").modal("show");
   });
 
-  // When field changes, update oldValue
-  $("#field").on("change", function () {
+  // When field changes, update oldValue (WORKING VERSION)
+  /*$("#field").on("change", function () {
     let field = $(this).val();
     let btn = $(".request-amendment-btn[data-id='" + $("#logId").val() + "']");
     if (field === "start_time") $("#oldValue").val(btn.data("old-start"));
     else if (field === "end_time") $("#oldValue").val(btn.data("old-end"));
     else if (field === "remarks") $("#oldValue").val(btn.data("old-remarks"));
+  });*/
+
+  // When field changes, update oldValue and input type
+  $("#field").on("change", function () {
+    let field = $(this).val();
+    let btn = $(".request-amendment-btn[data-id='" + $("#logId").val() + "']");
+
+    if (field === "start_time") {
+      $("#oldValue").val(btn.data("old-start"));
+      setNewValueInput("time"); // time picker
+    } else if (field === "end_time") {
+      $("#oldValue").val(btn.data("old-end"));
+      setNewValueInput("time");
+    } else if (field === "date") {
+      $("#oldValue").val($("#amendDate").val()); // current log date
+      setNewValueInput("date"); // date picker
+    } else if (field === "remarks") {
+      $("#oldValue").val(btn.data("old-remarks"));
+      setNewValueInput("text");
+    }
   });
+
+  // Helper to swap input type dynamically
+  function setNewValueInput(type) {
+    let wrapper = $("#newValueWrapper");
+    wrapper.empty();
+
+    if (type === "time") {
+      wrapper.append(
+        '<input type="time" id="newValue" name="new_value" class="form-control" required>'
+      );
+    } else if (type === "date") {
+      wrapper.append(
+        '<input type="date" id="newValue" name="new_value" class="form-control" required>'
+      );
+    } else {
+      wrapper.append(
+        '<input type="text" id="newValue" name="new_value" class="form-control" required>'
+      );
+    }
+  }
 
   // Submit amendment
   $("#amendmentForm").on("submit", function (e) {

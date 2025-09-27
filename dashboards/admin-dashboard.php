@@ -19,6 +19,20 @@ if (!in_array($_SESSION['role'], $allowedRoles)) {
 }
 
 $loggedInUserRole = $_SESSION['role'];
+$userId = $_SESSION['user_id'];
+
+// If supervisor, fetch their department assignment
+if ($loggedInUserRole === 'supervisor') {
+    $supervisorDepartments = [];
+    $stmt = $conn->prepare("SELECT department_id FROM user_departments WHERE user_id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $supervisorDepartments[] = $row['department_id'];
+    }
+    $stmt->close();
+}
 
 ?>
 
@@ -48,8 +62,12 @@ $loggedInUserRole = $_SESSION['role'];
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
         sessionStorage.setItem("userRole", "<?php echo $_SESSION['role']; ?>");
+        const supervisorDepartments = <?= json_encode($supervisorDepartments ?? []); ?>;
         const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
     </script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 
@@ -66,7 +84,7 @@ $loggedInUserRole = $_SESSION['role'];
                 <h5 id="live-date" class="fw-bold"></h5>
                 <h6 id="live-time" class="text-muted"></h6>
             </div>
-            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+            <a href="../backend/logout.php" onclick="return confirm('Are you sure you want to log out?')"><button class="btn-logout" data-bs-toggle="tooltip" data-bs-placement="top" title="Logout button"><i class="fa-solid fa-right-from-bracket"></i></button></a>
         </header>
 
         <!---SIDEBAR--->
@@ -98,7 +116,12 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="statusSubmenu">
                         <li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li>
-                        <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">Data Visualization</li>
+                        <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive'): ?>
+                            <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">
+                                Data Visualization
+                            </li>
+                        <?php endif; ?>
+
                     </ul>
                 </li>
 
@@ -134,14 +157,14 @@ $loggedInUserRole = $_SESSION['role'];
 
                 <!----USER MANAGEMENT---->
                 <li>
-                    <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#userManagementmenu" role="button" aria-expanded="false" aria-controls="userManagementmenu">
-                        <span><i class="fa-solid fa-user"></i>USER MANAGEMENT</span>
-                        <i class="fa-solid fa-caret-down"></i>
-                    </a>
+                    <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive' || $loggedInUserRole === 'hr'): ?>
+                        <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#userManagementmenu" role="button" aria-expanded="false" aria-controls="userManagementmenu">
+                            <span><i class="fa-solid fa-user"></i>USER MANAGEMENT</span>
+                            <i class="fa-solid fa-caret-down"></i>
+                        </a>
+                    <?php endif; ?>
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="userManagementmenu">
-
-                        <li class="sidebar-list-item" data-page="add-users" onclick="changePage('add-users')">Add Users</li>
                         <li class="sidebar-list-item" data-page="users-list" onclick="changePage('users-list')">Users list</li>
                     </ul>
                 </li>
@@ -172,12 +195,14 @@ $loggedInUserRole = $_SESSION['role'];
                 <div class="main-title mb-4 d-flex justify-content-between align-items-center">
                     <h1 class="fw-bold">STATUS DASHBOARD</h1>
 
-                    <!-- Department Filter -->
-                    <div>
-                        <select id="dashDepartmentFilter" class="form-select shadow-sm">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
+                    <?php if ($loggedInUserRole !== 'supervisor'): ?>
+                        <!-- Department Filter (all except supervisor can filter all depts) -->
+                        <div>
+                            <select id="dashDepartmentFilter" class="form-select shadow-sm">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="card shadow-sm rounded-3">
@@ -198,6 +223,47 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
+            <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive'): ?>
+                <!-- DATA VISUALIZATION (admins & executives only) -->
+                <div id="data-visualization-page" class="page-content container-fluid py-4">
+                    <div class="main-title mb-4 text-center">
+                        <h1 class="fw-bold">DATA VISUALIZATION</h1>
+                    </div>
+
+                    <div class="row">
+                        <!-- Sidebar Controls -->
+                        <div class="col-md-3">
+                            <h5 class="fw-bold">Departments</h5>
+                            <div id="department-buttons" class="d-flex flex-column gap-2 mb-4"></div>
+
+                            <h5 class="fw-bold">Chart Type</h5>
+                            <button class="btn btn-dark mb-2 chart-toggle" data-type="bar">
+                                <i class="fas fa-chart-bar"></i> Production Hours
+                            </button>
+                            <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
+                                <i class="fas fa-chart-pie"></i> Task Distribution
+                            </button>
+
+                            <div id="month-filter" style="display:none;">
+                                <h5 class="fw-bold">Select Month</h5>
+                                <select id="monthSelector" class="form-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- Chart + Data -->
+                        <div class="col-md-9">
+                            <div class="card shadow p-3 mb-4" style="height: 500px;">
+                                <canvas id="visualizationChart"></canvas>
+                                <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
+                                    No chart data available for this selection.
+                                </div>
+                            </div>
+                            <div id="taskList" class="card shadow p-3"></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Floating Online Users Widget -->
             <div id="onlineWidget" class="position-fixed bottom-0 end-0 m-3">
                 <!-- Toggle Button -->
@@ -213,7 +279,6 @@ $loggedInUserRole = $_SESSION['role'];
                     <ul id="onlineUsersList" class="list-group list-group-flush small"></ul>
                 </div>
             </div>
-
 
             <!---MY TRACKER PAGE--->
             <div id="my-tracker-page" class="page-content">
@@ -273,7 +338,77 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
-            <!---ADD USERS PAGE--->
+            <!---MONTHLY SUMMARY PAGE--->
+            <div id="monthly-summary-page" class="page-content">
+                <div class="main-title">
+                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
+                </div>
+
+                <div class="filters mb-3 row g-2">
+                    <div class="col-md-3">
+                        <label for="summaryDepartmentFilter">Select Department</label>
+                        <select class="form-select" id="summaryDepartmentFilter">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="userDropdown">Select User</label>
+                        <select id="userDropdown" class="form-select">
+                            <option value="">-- Select User --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" class="form-control" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for=""></label>
+                        <button class="btn btn-success w-100" onclick="loadMonthlySummary()">Search</button>
+                    </div>
+                </div>
+
+
+
+                <!-- Search Result List -->
+                <div id="searchResults" class="my-3"></div>
+
+                <!-- Table -->
+                <div id="summaryTableWrapper" class="table-responsive" style="display:none;">
+                    <table class="table table-bordered table-striped" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Login</th>
+                                <th>Logout</th>
+                                <th>Total Time</th>
+                                <th>Production</th>
+                                <th>Offphone</th>
+                                <th>Training</th>
+                                <th>Resono Function</th>
+                                <th>Paid Break</th>
+                                <th>Unpaid Break</th>
+                                <th>Personal Time</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <!-- Export Button -->
+                <div class="text-end mt-3">
+                    <!---button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
+                        📄 Export to PDF
+                    </button--->
+                    <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
+                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department</button>
+                </div>
+            </div>
+
+            <!---ADD USERS PAGE (REMOVE SOON)>
             <div id="add-users-page" class="page-content">
                 <div class="main-title">
                     <h1 class="fw-bold">ADD USERS</h1>
@@ -320,7 +455,7 @@ $loggedInUserRole = $_SESSION['role'];
                                     <option value="admin">Admin</option>
                                     <option value="executive">Executive</option>
                                     <option value="hr">HR</option>
-                                    <option value="user">User</option>
+                                    <option value="user">Employee</option>
                                     <option value="client">Client</option>
                                     <option value="supervisor">Supervisor</option>
                                 </select>
@@ -341,9 +476,9 @@ $loggedInUserRole = $_SESSION['role'];
                     </form>
                 </div>
 
-                <?php include "../modals/success-modal.php"; ?>
+                
 
-            </div>
+            </div--->
 
             <!---DEPARTMENTS PAGE--->
             <div id="departments-page" class="page-content">
@@ -379,49 +514,30 @@ $loggedInUserRole = $_SESSION['role'];
                         </tbody>
                     </table>
                 </div>
-                <!-- Work Mode Assignment Section -->
-                <div class="card mt-4 shadow-sm p-3">
-                    <h5 class="mb-3">Assign Work Modes to Department</h5>
-                    <form id="assignWorkModeForm" class="d-flex gap-2">
-                        <select id="assignDeptSelect" class="form-control" required></select>
-                        <select id="assignWorkModeSelect" class="form-control" required></select>
-                        <button type="submit" class="btn btn-success">Assign</button>
-                    </form>
-                </div>
-
-                <!-- Assigned Work Modes Table -->
-                <div class="table-responsive mt-4">
-                    <table id="deptWorkModesTable" class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Department</th>
-                                <th>Work Mode</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Filled by JS -->
-                        </tbody>
-                    </table>
-                </div>
-
             </div>
 
             <!-- USERS LIST PAGE -->
+
             <div id="users-list-page" class="page-content">
                 <div class="main-title">
                     <h1 class="fw-bold">USERS LIST</h1>
                 </div>
 
                 <!-- Department Filter -->
-                <div class="row mb-3">
+                <div class="row mb-3 align-items-end">
                     <div class="col-md-4">
                         <label for="adminDepartmentFilter" class="form-label">Filter by Department:</label>
                         <select id="adminDepartmentFilter" class="form-select">
                             <option value="0">All Departments</option>
                         </select>
                     </div>
+                    <div class="col text-end">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fa fa-user-plus"></i> Add User
+                        </button>
+                    </div>
                 </div>
+
 
                 <!-- Users Table -->
                 <div class="table-responsive">
@@ -442,6 +558,7 @@ $loggedInUserRole = $_SESSION['role'];
                     </table>
                 </div>
             </div>
+
 
             <!---CREATE WORK MODE PAGE--->
             <div id="create-work-mode-page" class="page-content">
@@ -526,73 +643,6 @@ $loggedInUserRole = $_SESSION['role'];
 
 
                 <?php include "../modals/wmt-success-modal.php"; ?>
-            </div>
-
-            <!---MONTHLY SUMMARY PAGE--->
-            <div id="monthly-summary-page" class="page-content">
-                <div class="main-title">
-                    <h1 class="fw-bold">MONTHLY SUMMARY</h1>
-                </div>
-
-                <div class="filters mb-3 row g-2">
-                    <div class="col-md-3">
-                        <label for="searchUser">Search User</label>
-                        <input type="text" id="searchUser" placeholder="Search User" class="form-control" />
-                    </div>
-                    <div class="col-md-2">
-                        <label for="startDate">Start Date</label>
-                        <input type="date" id="startDate" class="form-control" />
-                    </div>
-                    <div class="col-md-2">
-                        <label for="endDate">End Date</label>
-                        <input type="date" id="endDate" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                        <label for="summaryDepartmentFilter">Select Department</label>
-                        <select class="form-select" id="summaryDepartmentFilter">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for=""></label>
-                        <button class="btn btn-success w-100" onclick="searchUsers()">Search</button>
-                    </div>
-                </div>
-
-
-
-                <!-- Search Result List -->
-                <div id="searchResults" class="my-3"></div>
-
-                <!-- Table -->
-                <div id="summaryTableWrapper" class="table-responsive" style="display:none;">
-                    <table class="table table-bordered table-striped" id="summaryTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Login</th>
-                                <th>Logout</th>
-                                <th>Total Time</th>
-                                <th>Production</th>
-                                <th>Offphone</th>
-                                <th>Training</th>
-                                <th>Resono Function</th>
-                                <th>Paid Break</th>
-                                <th>Unpaid Break</th>
-                                <th>Personal Time</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <!-- Export Button -->
-                <div class="text-end mt-3">
-                    <button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
-                        📄 Export to PDF
-                    </button>
-                    <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
-                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department (ZIP)</button>
-                </div>
             </div>
 
             <!---EDIT PROFILE USER--->
@@ -707,6 +757,8 @@ $loggedInUserRole = $_SESSION['role'];
                     </div>
                 </div>
             </div>
+
+            <!---REMOVED ASSIGNMENT OF WORK MODE TO DEPARTMENTS (IMPLEMENT SOON)-->
 
             <!---ADMIN REQUEST SECTION--->
             <div id="admin-request-page" class="page-content">
@@ -832,8 +884,12 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/admin-user-profile-modal.php"; ?>
     <?php include "../modals/admin-edit-request-modal.php"; ?>
     <?php include "../modals/edit-department-modal.php"; ?>
+    <?php include "../modals/add-user-modal.php"; ?>
+    <?php include "../modals/success-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/global-loader.js"></script>
+    <script src="../js/data-visualization.js"></script>
     <script src="../js/admin-request-render.js"></script>
     <script src="../js/admin-amendments.js"></script>
     <script src="../js/edit-profile.js"></script>
@@ -856,9 +912,6 @@ $loggedInUserRole = $_SESSION['role'];
     <script src="../js/insert-task-in-between.js"></script>
     <script src="../js/assign-dept-wmt.js"></script>
     <script src="../js/load-statuses.js"></script>
-
-
-
 
     <script>
         function confirmRegistration() {

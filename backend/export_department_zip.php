@@ -8,12 +8,11 @@ if (!isset($_GET['department'])) {
     echo "Missing department.";
     exit;
 }
-
 $deptId = intval($_GET['department']);
 
 // Accept either ?month=YYYY-MM OR ?start&end
 if (!empty($_GET['month'])) {
-    $month = $_GET['month'];
+    $month      = $_GET['month'];
     $monthStart = "$month-01";
     $monthEnd   = date("Y-m-t", strtotime($monthStart));
 } elseif (!empty($_GET['start']) && !empty($_GET['end'])) {
@@ -32,7 +31,6 @@ $dstmt->bind_param("i", $deptId);
 $dstmt->execute();
 $drow = $dstmt->get_result()->fetch_assoc();
 $dstmt->close();
-
 if (!$drow) {
     http_response_code(404);
     echo "Department not found.";
@@ -46,14 +44,13 @@ $ustmt->bind_param("i", $deptId);
 $ustmt->execute();
 $users = $ustmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $ustmt->close();
-
 if (!$users || count($users) === 0) {
     http_response_code(404);
     echo "No users found in department.";
     exit;
 }
 
-// create zip
+// create temp zip file
 $zipFile = tempnam(sys_get_temp_dir(), "deptzip_");
 $zip = new ZipArchive();
 if ($zip->open($zipFile, ZipArchive::OVERWRITE) !== true) {
@@ -62,29 +59,33 @@ if ($zip->open($zipFile, ZipArchive::OVERWRITE) !== true) {
     exit;
 }
 
+// generate CSVs per user and add to zip
 foreach ($users as $user) {
-    $userId = (int)$user['id'];
+    $userId   = (int)$user['id'];
     $nameParts = trim($user['first_name'] . ' ' . ($user['middle_name'] ?? '') . ' ' . $user['last_name']);
     $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $nameParts);
 
-    $gen = generate_mtd_csv($conn, $userId, $monthStart, $monthEnd);
-    $csvContent = $gen['csv'] ?? '';
+    // ✅ Updated to new function signature
+    $csvContent = generateUserCsv($conn, $userId, $monthStart, $monthEnd, $_SESSION['role'] ?? 'guest', $deptName);
+
     if ($csvContent === '') {
-        $csvContent = "User,{$nameParts}\nDepartment,\n\nNo data for selected period.\n";
+        $csvContent = "User,{$nameParts}\nDepartment,{$deptName}\n\nNo data for selected period.\n";
     }
+
     $zip->addFromString("{$safeName}_{$month}.csv", $csvContent);
 }
 
 $zip->close();
 
-$zipFilenameSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $deptName);
-$downloadName = "{$zipFilenameSafe}_MTD_{$month}.zip";
-
-// Clean (avoid accidental output before ZIP content)
-if (ob_get_length()) {
+// Clean all buffers before sending headers
+while (ob_get_level()) {
     ob_end_clean();
 }
 
+$zipFilenameSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $deptName);
+$downloadName    = "{$zipFilenameSafe}_MTD_{$month}.zip";
+
+// Force download headers
 header('Content-Type: application/zip');
 header("Content-Disposition: attachment; filename=\"{$downloadName}\"");
 header('Content-Length: ' . filesize($zipFile));
@@ -95,4 +96,3 @@ readfile($zipFile);
 // Cleanup
 unlink($zipFile);
 exit;
-

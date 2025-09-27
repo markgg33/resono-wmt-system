@@ -10,24 +10,23 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
 }
 
 $role = $_SESSION['role'];
-if (!in_array($role, ["executive", "client"])) {
+if (!in_array($role, ["executive", "client", "admin", "user", "supervisor"])) {
     echo json_encode(["success" => false, "message" => "Access denied"]);
     exit;
 }
 
-// Check if filter is passed
-$filter = isset($_GET['department_id']) && $_GET['department_id'] !== '' ? intval($_GET['department_id']) : null;
+// Department filter
+$filter = isset($_GET['department_id']) && $_GET['department_id'] !== ''
+    ? intval($_GET['department_id'])
+    : null;
 
-// Base WHERE clause
-$where = "WHERE u.is_online = 1"; // only online
+$where = "WHERE u.is_online = 1";
 
 if ($role === "client") {
-    // Restrict to specific depts
-    $where .= " AND d.name IN ('Ancillary', 'Fraud Detection')";
+    $where .= " AND (d.name IS NOT NULL OR d.name IS NULL)";
 }
 
 if ($filter) {
-    // If a filter is set, hide unassigned
     $where .= " AND u.department_id = $filter";
 }
 
@@ -44,9 +43,10 @@ $result = $conn->query($sql);
 
 $users = [];
 while ($row = $result->fetch_assoc()) {
-    // Get latest task log
+    // latest task (if any)
     $latestSql = "SELECT CONCAT(w.name, ' - ', td.description) AS latest_task,
                          w.name AS work_mode,
+                         td.description AS task_description,
                          t.start_time
                   FROM task_logs t
                   LEFT JOIN work_modes w ON t.work_mode_id = w.id
@@ -62,18 +62,26 @@ while ($row = $result->fetch_assoc()) {
 
     $task = $latestRow['latest_task'] ?? "No recent task";
     $mode = strtolower($latestRow['work_mode'] ?? "");
+    $taskDesc = strtolower($latestRow['task_description'] ?? "");
     $timeTagged = $latestRow['start_time'] ?? null;
 
-    // Decide status
-    $status = "active"; // green
-    if (strpos($mode, "away") !== false || strpos($mode, "meeting") !== false) {
-        $status = "away"; // yellow
+    // skip if last action was End Shift
+    if ($taskDesc === "end shift" || stripos($task, "end shift") !== false) {
+        continue;
     }
 
-    // Build profile image path (fallback if no upload yet)
+    // default: logged in but no tasks
+    $status = "active";
+    if (strpos($mode, "away") !== false || strpos($mode, "meeting") !== false) {
+        $status = "away";
+    }
+    if (!$latestRow) {
+        $status = "online"; // distinguish no tasks yet
+    }
+
     $profileImage = !empty($row['profile_image'])
         ? "../" . $row['profile_image']
-        : "assets/default-avatar.jpg"; // fallback default avatar
+        : "../assets/default-avatar.jpg";
 
     $users[] = [
         "full_name"     => $row['full_name'],
