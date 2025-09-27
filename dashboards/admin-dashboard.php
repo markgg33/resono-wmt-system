@@ -22,13 +22,15 @@ $loggedInUserRole = $_SESSION['role'];
 $userId = $_SESSION['user_id'];
 
 // If supervisor, fetch their department assignment
-$supervisorDeptId = null;
 if ($loggedInUserRole === 'supervisor') {
-    $stmt = $conn->prepare("SELECT department_id FROM users WHERE id = ?");
+    $supervisorDepartments = [];
+    $stmt = $conn->prepare("SELECT department_id FROM user_departments WHERE user_id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
-    $stmt->bind_result($supervisorDeptId);
-    $stmt->fetch();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $supervisorDepartments[] = $row['department_id'];
+    }
     $stmt->close();
 }
 
@@ -60,7 +62,7 @@ if ($loggedInUserRole === 'supervisor') {
     <script>
         sessionStorage.setItem("user_id", "<?php echo $_SESSION['user_id']; ?>");
         sessionStorage.setItem("userRole", "<?php echo $_SESSION['role']; ?>");
-        const supervisorDeptId = "<?= $supervisorDeptId ?? '' ?>";
+        const supervisorDepartments = <?= json_encode($supervisorDepartments ?? []); ?>;
         const userRole = "<?php echo $loggedInUserRole; ?>"; // make it accessible as a JS variable
     </script>
 
@@ -155,14 +157,14 @@ if ($loggedInUserRole === 'supervisor') {
 
                 <!----USER MANAGEMENT---->
                 <li>
-                    <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#userManagementmenu" role="button" aria-expanded="false" aria-controls="userManagementmenu">
-                        <span><i class="fa-solid fa-user"></i>USER MANAGEMENT</span>
-                        <i class="fa-solid fa-caret-down"></i>
-                    </a>
+                    <?php if ($loggedInUserRole === 'admin' || $loggedInUserRole === 'executive' || $loggedInUserRole === 'hr'): ?>
+                        <a class="sidebar-dropdown d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#userManagementmenu" role="button" aria-expanded="false" aria-controls="userManagementmenu">
+                            <span><i class="fa-solid fa-user"></i>USER MANAGEMENT</span>
+                            <i class="fa-solid fa-caret-down"></i>
+                        </a>
+                    <?php endif; ?>
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="userManagementmenu">
-
-                        <li class="sidebar-list-item" data-page="add-users" onclick="changePage('add-users')">Add Users</li>
                         <li class="sidebar-list-item" data-page="users-list" onclick="changePage('users-list')">Users list</li>
                     </ul>
                 </li>
@@ -252,6 +254,9 @@ if ($loggedInUserRole === 'supervisor') {
                         <div class="col-md-9">
                             <div class="card shadow p-3 mb-4" style="height: 500px;">
                                 <canvas id="visualizationChart"></canvas>
+                                <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
+                                    No chart data available for this selection.
+                                </div>
                             </div>
                             <div id="taskList" class="card shadow p-3"></div>
                         </div>
@@ -341,6 +346,12 @@ if ($loggedInUserRole === 'supervisor') {
 
                 <div class="filters mb-3 row g-2">
                     <div class="col-md-3">
+                        <label for="summaryDepartmentFilter">Select Department</label>
+                        <select class="form-select" id="summaryDepartmentFilter">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label for="userDropdown">Select User</label>
                         <select id="userDropdown" class="form-select">
                             <option value="">-- Select User --</option>
@@ -354,12 +365,7 @@ if ($loggedInUserRole === 'supervisor') {
                         <label for="endDate">End Date</label>
                         <input type="date" id="endDate" class="form-control" />
                     </div>
-                    <div class="col-md-3">
-                        <label for="summaryDepartmentFilter">Select Department</label>
-                        <select class="form-select" id="summaryDepartmentFilter">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
+
                     <div class="col-md-2">
                         <label for=""></label>
                         <button class="btn btn-success w-100" onclick="loadMonthlySummary()">Search</button>
@@ -394,15 +400,15 @@ if ($loggedInUserRole === 'supervisor') {
                 </div>
                 <!-- Export Button -->
                 <div class="text-end mt-3">
-                    <button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
+                    <!---button id="exportPDFBtn" class="btn btn-danger" style="display:none;">
                         📄 Export to PDF
-                    </button>
+                    </button--->
                     <button id="exportCSVBtn" class="btn btn-primary" style="display:none;">📊 Export to CSV</button>
-                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department (ZIP)</button>
+                    <button id="exportDeptCSVBtn" class="btn btn-success">Export Department</button>
                 </div>
             </div>
 
-            <!---ADD USERS PAGE--->
+            <!---ADD USERS PAGE (REMOVE SOON)>
             <div id="add-users-page" class="page-content">
                 <div class="main-title">
                     <h1 class="fw-bold">ADD USERS</h1>
@@ -470,9 +476,9 @@ if ($loggedInUserRole === 'supervisor') {
                     </form>
                 </div>
 
-                <?php include "../modals/success-modal.php"; ?>
+                
 
-            </div>
+            </div--->
 
             <!---DEPARTMENTS PAGE--->
             <div id="departments-page" class="page-content">
@@ -508,49 +514,30 @@ if ($loggedInUserRole === 'supervisor') {
                         </tbody>
                     </table>
                 </div>
-                <!-- Work Mode Assignment Section -->
-                <div class="card mt-4 shadow-sm p-3">
-                    <h5 class="mb-3">Assign Work Modes to Department</h5>
-                    <form id="assignWorkModeForm" class="d-flex gap-2">
-                        <select id="assignDeptSelect" class="form-control" required></select>
-                        <select id="assignWorkModeSelect" class="form-control" required></select>
-                        <button type="submit" class="btn btn-success">Assign</button>
-                    </form>
-                </div>
-
-                <!-- Assigned Work Modes Table -->
-                <div class="table-responsive mt-4">
-                    <table id="deptWorkModesTable" class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Department</th>
-                                <th>Work Mode</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Filled by JS -->
-                        </tbody>
-                    </table>
-                </div>
-
             </div>
 
             <!-- USERS LIST PAGE -->
+
             <div id="users-list-page" class="page-content">
                 <div class="main-title">
                     <h1 class="fw-bold">USERS LIST</h1>
                 </div>
 
                 <!-- Department Filter -->
-                <div class="row mb-3">
+                <div class="row mb-3 align-items-end">
                     <div class="col-md-4">
                         <label for="adminDepartmentFilter" class="form-label">Filter by Department:</label>
                         <select id="adminDepartmentFilter" class="form-select">
                             <option value="0">All Departments</option>
                         </select>
                     </div>
+                    <div class="col text-end">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fa fa-user-plus"></i> Add User
+                        </button>
+                    </div>
                 </div>
+
 
                 <!-- Users Table -->
                 <div class="table-responsive">
@@ -571,6 +558,7 @@ if ($loggedInUserRole === 'supervisor') {
                     </table>
                 </div>
             </div>
+
 
             <!---CREATE WORK MODE PAGE--->
             <div id="create-work-mode-page" class="page-content">
@@ -770,6 +758,8 @@ if ($loggedInUserRole === 'supervisor') {
                 </div>
             </div>
 
+            <!---REMOVED ASSIGNMENT OF WORK MODE TO DEPARTMENTS (IMPLEMENT SOON)-->
+
             <!---ADMIN REQUEST SECTION--->
             <div id="admin-request-page" class="page-content">
                 <div class="main-title">
@@ -894,8 +884,11 @@ if ($loggedInUserRole === 'supervisor') {
     <?php include "../modals/admin-user-profile-modal.php"; ?>
     <?php include "../modals/admin-edit-request-modal.php"; ?>
     <?php include "../modals/edit-department-modal.php"; ?>
+    <?php include "../modals/add-user-modal.php"; ?>
+    <?php include "../modals/success-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/global-loader.js"></script>
     <script src="../js/data-visualization.js"></script>
     <script src="../js/admin-request-render.js"></script>
     <script src="../js/admin-amendments.js"></script>
