@@ -9,8 +9,7 @@ if (!isset($_SESSION['role'])) {
 
 if (!isset($_GET['department'])) {
     http_response_code(400);
-    echo "Missing department.";
-    exit;
+    exit("Missing department.");
 }
 $deptId = intval($_GET['department']);
 
@@ -24,8 +23,7 @@ if (!empty($_GET['month'])) {
     $month      = substr($monthStart, 0, 7) . "_to_" . substr($monthEnd, 0, 7);
 } else {
     http_response_code(400);
-    echo "Missing parameters.";
-    exit;
+    exit("Missing parameters.");
 }
 
 // get department name
@@ -36,8 +34,7 @@ $drow = $dstmt->get_result()->fetch_assoc();
 $dstmt->close();
 if (!$drow) {
     http_response_code(404);
-    echo "Department not found.";
-    exit;
+    exit("Department not found.");
 }
 $deptName = $drow['name'];
 
@@ -54,16 +51,15 @@ $users = $ustmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $ustmt->close();
 if (!$users) {
     http_response_code(404);
-    echo "No users in department.";
-    exit;
+    exit("No users in department.");
 }
 
+// create zip
 $zipFile = tempnam(sys_get_temp_dir(), "deptzip_");
 $zip = new ZipArchive();
 if ($zip->open($zipFile, ZipArchive::OVERWRITE) !== true) {
     http_response_code(500);
-    echo "Cannot create zip.";
-    exit;
+    exit("Cannot create zip.");
 }
 
 foreach ($users as $user) {
@@ -82,13 +78,10 @@ foreach ($users as $user) {
 
 $zip->close();
 
-while (ob_get_level()) {
-    ob_end_clean();
-}
-
+// output zip
+while (ob_get_level()) ob_end_clean();
 $zipFilenameSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $deptName);
 $downloadName = "{$zipFilenameSafe}_MTD_{$month}.zip";
-
 header('Content-Type: application/zip');
 header("Content-Disposition: attachment; filename=\"{$downloadName}\"");
 header('Content-Length: ' . filesize($zipFile));
@@ -96,13 +89,12 @@ readfile($zipFile);
 unlink($zipFile);
 exit;
 
-
 // === Helpers ===
 function generateUserCsv($conn, $userId, $monthStart, $monthEnd, $lobName)
 {
-    $userInfo = getUserInfo($conn, $userId);
-    $userName = $userInfo['name'];
+    $userName = getUserInfo($conn, $userId);
     $logs = getLogs($conn, $userId, $monthStart, $monthEnd);
+    $primaryDept = getPrimaryDepartment($conn, $userId);
 
     $fh = fopen("php://temp", "r+");
     fputcsv($fh, [
@@ -123,19 +115,7 @@ function generateUserCsv($conn, $userId, $monthStart, $monthEnd, $lobName)
         $desc = getDescription($conn, $log['task_description_id']);
         if (stripos($desc, "end shift") !== false) continue;
 
-        // Normalize description for away-break detection
-        $normalizedDesc = strtolower(trim($desc));
-        if (
-            strpos($normalizedDesc, "away-break") !== false ||
-            strpos($normalizedDesc, "away break") !== false ||
-            strpos($normalizedDesc, "away - break") !== false ||
-            strpos($normalizedDesc, "awaybreak") !== false
-        ) {
-            $billingCategory = "Non-Billable";
-        } else {
-            $billingCategory = getUserDepartments($conn, $userId);
-        }
-
+        $billingCategory = preg_match('/away[\s\-]*break/i', $desc) ? "Non-Billable" : $primaryDept;
         $weekEnding = getWeekEndingSunday($log['date']);
 
         fputcsv($fh, [
@@ -144,7 +124,7 @@ function generateUserCsv($conn, $userId, $monthStart, $monthEnd, $lobName)
             $desc,
             $log['start_time'],
             $log['end_time'],
-            $log['total_duration'], // ✅ TOTAL TIME SPENT
+            $log['total_duration'] ?? '',
             $log['remarks'] ?? '',
             '',
             $lobName,
@@ -166,33 +146,33 @@ function getUserInfo($conn, $userId)
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    $name = trim($row['first_name'] . " " . ($row['middle_name'] ?? "") . " " . $row['last_name']);
-    return ['name' => $name];
+    return trim($row['first_name'] . " " . ($row['middle_name'] ?? "") . " " . $row['last_name']);
 }
 
-function getUserDepartments($conn, $userId)
+function getPrimaryDepartment($conn, $userId)
 {
     $stmt = $conn->prepare("
-        SELECT GROUP_CONCAT(DISTINCT d.name ORDER BY d.name SEPARATOR ', ') AS departments
+        SELECT d.name
         FROM user_departments ud
         JOIN departments d ON ud.department_id=d.id
-        WHERE ud.user_id=?
+        WHERE ud.user_id=? AND ud.is_primary=1
+        LIMIT 1
     ");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    return $row['departments'] ?? '';
+    return $row['name'] ?? '';
 }
 
 function getLogs($conn, $userId, $monthStart, $monthEnd)
 {
-    $q = "SELECT id,user_id,task_description_id,date,start_time,end_time,total_duration,remarks 
-          FROM task_logs 
+    $q = "SELECT id,user_id,task_description_id,date,start_time,end_time,total_duration,remarks
+          FROM task_logs
           WHERE user_id=? AND date BETWEEN ? AND ?
           UNION ALL
-          SELECT original_id,user_id,task_description_id,date,start_time,end_time,total_duration,remarks 
-          FROM task_logs_archive 
+          SELECT original_id,user_id,task_description_id,date,start_time,end_time,total_duration,remarks
+          FROM task_logs_archive
           WHERE user_id=? AND date BETWEEN ? AND ?
           ORDER BY date ASC,start_time ASC";
     $stmt = $conn->prepare($q);
@@ -211,8 +191,7 @@ function getDescription($conn, $descId)
     $stmt = $conn->prepare("SELECT description FROM task_descriptions WHERE id=? LIMIT 1");
     $stmt->bind_param("i", $descId);
     $stmt->execute();
-    $res = $stmt->get_result();
-    $desc = $res->fetch_assoc()['description'] ?? '';
+    $desc = $stmt->get_result()->fetch_assoc()['description'] ?? '';
     $stmt->close();
     $cache[$descId] = $desc;
     return $desc;
@@ -221,6 +200,5 @@ function getDescription($conn, $descId)
 function getWeekEndingSunday($date)
 {
     $ts = strtotime($date);
-    $dow = date("w", $ts);
-    return ($dow == 0) ? date("Y-m-d", $ts) : date("Y-m-d", strtotime("next Sunday", $ts));
+    return date("Y-m-d", strtotime("next Sunday", $ts - (date("w", $ts) * 86400)));
 }

@@ -12,8 +12,7 @@ $role = $_SESSION['role'];
 // === Input validation ===
 if (!isset($_GET['department'])) {
     http_response_code(400);
-    echo "Missing department.";
-    exit;
+    exit("Missing department.");
 }
 $deptId = intval($_GET['department']);
 
@@ -28,11 +27,10 @@ if (!empty($_GET['month'])) {
     $month      = substr($monthStart, 0, 7) . "_to_" . substr($monthEnd, 0, 7);
 } else {
     http_response_code(400);
-    echo "Missing parameters: provide either month or start+end.";
-    exit;
+    exit("Missing parameters: provide either month or start+end.");
 }
 
-// get department name
+// Get department name
 $dstmt = $conn->prepare("SELECT name FROM departments WHERE id = ? LIMIT 1");
 $dstmt->bind_param("i", $deptId);
 $dstmt->execute();
@@ -40,12 +38,11 @@ $drow = $dstmt->get_result()->fetch_assoc();
 $dstmt->close();
 if (!$drow) {
     http_response_code(404);
-    echo "Department not found.";
-    exit;
+    exit("Department not found.");
 }
 $deptName = $drow['name'];
 
-// get users (from user_departments for flexibility)
+// Get users in the department
 $ustmt = $conn->prepare("
     SELECT u.id, u.first_name, u.middle_name, u.last_name
     FROM users u
@@ -58,14 +55,13 @@ $users = $ustmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $ustmt->close();
 if (!$users || count($users) === 0) {
     http_response_code(404);
-    echo "No users found in department.";
-    exit;
+    exit("No users found in department.");
 }
 
 // Create CSV in memory
 $fh = fopen("php://temp", "r+");
 
-// Standard header row (matches single-user export)
+// Standard header row
 fputcsv($fh, [
     "AGENT",
     "DATE",
@@ -84,9 +80,8 @@ foreach ($users as $user) {
     $userId = (int)$user['id'];
     $userName = trim($user['first_name'] . ' ' . ($user['middle_name'] ?? '') . ' ' . $user['last_name']);
 
-    // Get ALL departments for this user (array), then join to string for Billing Category
-    $deptNamesArr = getUserDepartments($conn, $userId);
-    $deptString = implode(", ", $deptNamesArr);
+    // Get only primary department for the user
+    $primaryDept = getPrimaryDepartment($conn, $userId);
 
     $logs = getLogs($conn, $userId, $monthStart, $monthEnd);
 
@@ -97,16 +92,8 @@ foreach ($users as $user) {
         // Week ending (Sunday of that week)
         $weekEnding = getWeekEndingSunday($log['date']);
 
-        // Billing category: Non-Billable only for AWAY-BREAK variants, else user's departments
-        // Use regex to catch "away-break", "away - break", "away break", "awaybreak", etc.
-        if (preg_match('/away[\s\-]*break/i', $desc)) {
-            $billingCategory = "Non-Billable";
-        } else {
-            $billingCategory = $deptString;
-        }
-
-        // Use total_duration directly (matches single-user export)
-        $totalDuration = $log['total_duration'] ?? '';
+        // Billing category: Non-Billable only for AWAY-BREAK variants
+        $billingCategory = preg_match('/away[\s\-]*break/i', $desc) ? "Non-Billable" : $primaryDept;
 
         fputcsv($fh, [
             $userName,             // AGENT
@@ -114,10 +101,10 @@ foreach ($users as $user) {
             $desc,                 // TASK DESC
             $log['start_time'],    // TIME START
             $log['end_time'],      // TIME END
-            $totalDuration,        // TOTAL TIME SPENT
+            $log['total_duration'] ?? '', // TOTAL TIME SPENT
             $log['remarks'] ?? '', // REMARK
-            '',                    // VOLUME (placeholder)
-            $deptName,             // LOB (the department being exported)
+            '',                    // VOLUME placeholder
+            $deptName,             // LOB (exported department)
             $weekEnding,           // WEEK ENDING
             $billingCategory       // BILLING CATEGORY
         ]);
@@ -129,9 +116,7 @@ $csvContent = stream_get_contents($fh);
 fclose($fh);
 
 // Clean output buffers
-while (ob_get_level()) {
-    ob_end_clean();
-}
+while (ob_get_level()) ob_end_clean();
 
 // Safe filename
 $deptSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $deptName);
@@ -142,23 +127,22 @@ header('Content-Type: text/csv');
 header("Content-Disposition: attachment; filename=\"$downloadName\"");
 header('Content-Length: ' . strlen($csvContent));
 
-// Output
+// Output CSV
 echo $csvContent;
 exit;
-
 
 // === Helper functions ===
 function getLogs($conn, $userId, $monthStart, $monthEnd)
 {
     $logsQuery = "
-      SELECT id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
-      FROM task_logs
-      WHERE user_id = ? AND date BETWEEN ? AND ?
-      UNION ALL
-      SELECT original_id AS id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
-      FROM task_logs_archive
-      WHERE user_id = ? AND date BETWEEN ? AND ?
-      ORDER BY date ASC, start_time ASC
+        SELECT id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+        FROM task_logs
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+        UNION ALL
+        SELECT original_id AS id, user_id, work_mode_id, task_description_id, date, start_time, end_time, total_duration, remarks
+        FROM task_logs_archive
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+        ORDER BY date ASC, start_time ASC
     ";
     $stmt = $conn->prepare($logsQuery);
     $stmt->bind_param("ississ", $userId, $monthStart, $monthEnd, $userId, $monthStart, $monthEnd);
@@ -183,23 +167,21 @@ function getDescription($conn, $descId)
     return $desc;
 }
 
-function getUserDepartments($conn, $userId)
+function getPrimaryDepartment($conn, $userId)
 {
     $stmt = $conn->prepare("
-        SELECT d.name 
+        SELECT d.name
         FROM user_departments ud
         JOIN departments d ON ud.department_id = d.id
-        WHERE ud.user_id = ?
+        WHERE ud.user_id = ? AND ud.is_primary = 1
+        LIMIT 1
     ");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $res = $stmt->get_result();
-    $depts = [];
-    while ($row = $res->fetch_assoc()) {
-        $depts[] = $row['name'];
-    }
+    $dept = $res->fetch_assoc()['name'] ?? '';
     $stmt->close();
-    return $depts;
+    return $dept;
 }
 
 function getWeekEndingSunday($date)

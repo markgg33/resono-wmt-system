@@ -35,32 +35,113 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ====== ADD USERS LOGIC ======
   if (
-    document.getElementById("department_id") &&
+    document.getElementById("department_ids") &&
     document.getElementById("role")
   ) {
     const departmentField = document.getElementById("departmentField");
-    const departmentSelect = document.getElementById("department_id");
+    const departmentDropdown = document.getElementById("departmentDropdown");
+    const hiddenInput = document.getElementById("department_ids");
     const roleSelect = document.getElementById("role");
+    const dropdownBtn = departmentField.querySelector(".dropdown-toggle");
+
+    // Helper: update hidden input + button label
+    function updateSelected() {
+      const selectedCheckboxes = Array.from(
+        departmentDropdown.querySelectorAll(".dept-checkbox:checked")
+      );
+
+      let selected = selectedCheckboxes.map((c) => {
+        const deptId = c.value;
+        const primaryRadio = departmentDropdown.querySelector(
+          `.dept-primary[value="${deptId}"]`
+        );
+        return {
+          id: deptId,
+          primary: primaryRadio?.checked || false,
+        };
+      });
+
+      hiddenInput.value = JSON.stringify(selected);
+
+      const selectedNames = selectedCheckboxes.map(
+        (c) =>
+          c.dataset.name +
+          (departmentDropdown.querySelector(`.dept-primary[value="${c.value}"]`)
+            .checked
+            ? " ⭐"
+            : "")
+      );
+
+      if (selectedNames.length === 0) {
+        dropdownBtn.innerHTML = "Select Departments";
+      } else {
+        dropdownBtn.innerHTML = selectedNames
+          .map((name) => `<span class="dept-badge">${name}</span>`)
+          .join(" ");
+      }
+    }
 
     // Fetch departments for dropdown
     fetch("../backend/get_departments.php")
       .then((res) => res.json())
       .then((departments) => {
-        departmentSelect.innerHTML = `
-                    <option value="">-- Select Department --</option>
-                    ${departments
-                      .map((d) => `<option value="${d.id}">${d.name}</option>`)
-                      .join("")}
-                `;
+        departmentDropdown.innerHTML = departments
+          .map(
+            (d) => `
+      <li class="d-flex align-items-center">
+        <label class="dropdown-item flex-grow-1">
+          <input type="checkbox" value="${d.id}" data-name="${d.name}" class="dept-checkbox"> ${d.name}
+        </label>
+        <input type="radio" name="primaryDept" value="${d.id}" class="dept-primary ms-2" title="Set Primary">
+      </li>
+    `
+          )
+          .join("");
+
+        // Add event listeners
+        departmentDropdown
+          .querySelectorAll(".dept-checkbox")
+          .forEach((checkbox) => {
+            checkbox.addEventListener("change", () => {
+              // If unchecked and was primary → clear radio
+              const radio = departmentDropdown.querySelector(
+                `.dept-primary[value="${checkbox.value}"]`
+              );
+              if (!checkbox.checked && radio.checked) {
+                radio.checked = false;
+              }
+              updateSelected();
+            });
+          });
+
+        departmentDropdown
+          .querySelectorAll(".dept-primary")
+          .forEach((radio) => {
+            radio.addEventListener("change", () => {
+              // Ensure its checkbox is checked if setting as primary
+              const checkbox = departmentDropdown.querySelector(
+                `.dept-checkbox[value="${radio.value}"]`
+              );
+              if (!checkbox.checked) checkbox.checked = true;
+              updateSelected();
+            });
+          });
       });
 
-    // Show/hide based on role
+    // Show/hide based on role for registration page
     roleSelect.addEventListener("change", function () {
-      if (this.value === "user") {
+      if (["user", "client", "supervisor"].includes(this.value)) {
         departmentField.style.display = "block";
       } else {
         departmentField.style.display = "none";
-        departmentSelect.value = "";
+        hiddenInput.value = "";
+        dropdownBtn.textContent = "Select Departments";
+        departmentDropdown.querySelectorAll(".dept-checkbox").forEach((c) => {
+          c.checked = false;
+        });
+        departmentDropdown.querySelectorAll(".dept-primary").forEach((r) => {
+          r.checked = false;
+        });
       }
     });
   }

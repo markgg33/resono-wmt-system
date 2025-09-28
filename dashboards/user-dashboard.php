@@ -445,6 +445,7 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/edit-request-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/global-loader.js"></script>
     <script src="../js/load-statuses.js"></script>
     <script src="../js/start-tag-task.js"></script>
     <script src="../js/user-amendments.js"></script>
