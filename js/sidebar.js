@@ -1,30 +1,38 @@
 function changePage(page) {
-  // For hiding the pages
+  // Hide all pages
   document.querySelectorAll(".page-content").forEach(function (pageContent) {
     pageContent.style.display = "none";
   });
 
-  // For showing the pages
+  // Show target page
   document.getElementById(page + "-page").style.display = "block";
+
+  // Save last visited page
+  localStorage.setItem("lastPage", page);
 }
 
-// Set the default page to be the dashboard page
 document.addEventListener("DOMContentLoaded", function () {
-  changePage("my-tracker");
-});
+  // Get saved page, fallback to my-tracker if none
+  const lastPage = localStorage.getItem("lastPage") || "my-tracker";
+  changePage(lastPage);
 
-document.addEventListener("DOMContentLoaded", function () {
+  // Highlight the correct sidebar item
   const sidebarItems = document.querySelectorAll(".sidebar-list-item");
+  sidebarItems.forEach((item) => {
+    item.classList.remove("active");
+    if (item.getAttribute("data-page") === lastPage) {
+      item.classList.add("active");
+    }
+  });
 
+  // Handle clicks to change pages
   sidebarItems.forEach((item) => {
     item.addEventListener("click", function () {
-      // Remove the "active" class from all sidebar items
-      sidebarItems.forEach((item) => {
-        item.classList.remove("active");
-      });
-
-      // Add the "active" class to the clicked sidebar item
+      sidebarItems.forEach((item) => item.classList.remove("active"));
       this.classList.add("active");
+
+      const page = this.getAttribute("data-page");
+      changePage(page);
     });
   });
 });

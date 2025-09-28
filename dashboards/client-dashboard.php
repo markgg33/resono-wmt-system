@@ -199,6 +199,9 @@ $loggedInUserRole = $_SESSION['role'];
                     <div class="col-md-9">
                         <div class="card shadow p-3 mb-4" style="height: 500px;">
                             <canvas id="visualizationChart"></canvas>
+                            <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
+                                No chart data available for this selection.
+                            </div>
                         </div>
                         <div id="taskList" class="card shadow p-3"></div>
                     </div>
@@ -340,6 +343,7 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/edit-department-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/global-loader.js"></script>
     <script src="../js/data-visualization.js"></script>
     <script src="../js/departments.js"></script>
     <script src="../js/load-statuses.js"></script>
