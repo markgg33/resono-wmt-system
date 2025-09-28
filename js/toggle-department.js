@@ -88,11 +88,11 @@ document.addEventListener("DOMContentLoaded", function () {
         departmentDropdown.innerHTML = departments
           .map(
             (d) => `
-      <li class="d-flex align-items-center">
-        <label class="dropdown-item flex-grow-1">
-          <input type="checkbox" value="${d.id}" data-name="${d.name}" class="dept-checkbox"> ${d.name}
+      <li class="d-flex align-items-center px-2">
+        <label class="dropdown-item flex-grow-1 mb-0 px-2">
+          <input type="checkbox" value="${d.id}" data-name="${d.name}" class="dept-checkbox me-2"> ${d.name}
         </label>
-        <input type="radio" name="primaryDept" value="${d.id}" class="dept-primary ms-2" title="Set Primary">
+        <input type="radio" name="primaryDept" value="${d.id}" class="dept-primary ms-3" title="Set Primary">
       </li>
     `
           )
@@ -103,7 +103,6 @@ document.addEventListener("DOMContentLoaded", function () {
           .querySelectorAll(".dept-checkbox")
           .forEach((checkbox) => {
             checkbox.addEventListener("change", () => {
-              // If unchecked and was primary → clear radio
               const radio = departmentDropdown.querySelector(
                 `.dept-primary[value="${checkbox.value}"]`
               );
@@ -118,7 +117,6 @@ document.addEventListener("DOMContentLoaded", function () {
           .querySelectorAll(".dept-primary")
           .forEach((radio) => {
             radio.addEventListener("change", () => {
-              // Ensure its checkbox is checked if setting as primary
               const checkbox = departmentDropdown.querySelector(
                 `.dept-checkbox[value="${radio.value}"]`
               );

@@ -1,4 +1,4 @@
-<!-- Edit User Modal -->
+<!-- Edit User Modal ADMIN ACCESS-->
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -28,16 +28,27 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Email</label>
-                        <input type="email" id="admin_edit_email" class="form-control" disabled>
+                        <input type="email" id="admin_edit_email" name="email" class="form-control" disabled>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Role</label>
                         <select id="admin_edit_role" class="form-select" required></select>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Department</label>
-                        <select id="admin_edit_department" class="form-select"></select>
+                    <div class="col-md-6" id="adminEditDepartmentField">
+                        <label class="form-label">Departments</label>
+                        <div class="dropdown w-100">
+                            <button
+                                class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                Select Departments
+                            </button>
+                            <ul class="dropdown-menu w-100" id="adminEditDepartmentDropdown"></ul>
+                        </div>
+                        <input type="hidden" id="admin_edit_departments" name="departments">
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label">Profile Image</label>
                         <input type="file" id="admin_edit_profile_image" class="form-control">

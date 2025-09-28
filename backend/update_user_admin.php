@@ -1,70 +1,73 @@
 <?php
-session_start();
 require_once "connection_db.php";
 
-// Allow access only to Admin, HR, or Executive
-$allowed_roles = ['admin', 'hr', 'executive'];
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $id          = intval($_POST["id"] ?? 0);
+    $employee_id = $_POST["employee_id"] ?? "";
+    $first_name  = $_POST["first_name"] ?? "";
+    $middle_name = $_POST["middle_name"] ?? "";
+    $last_name   = $_POST["last_name"] ?? "";
+    $email       = trim($_POST["email"] ?? "");
+    $role        = $_POST["role"] ?? "";
+    $profile_image = $_POST["profile_image"] ?? "";
+    $password    = $_POST["password"] ?? "";
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowed_roles)) {
-    http_response_code(403);
-    echo json_encode(["error" => "Unauthorized"]);
-    exit;
-}
+    $departments = json_decode($_POST["departments"] ?? "[]", true);
 
-$userId      = intval($_POST['id']);
-$first_name  = trim($_POST['first_name']);
-$middle_name = trim($_POST['middle_name']);
-$last_name   = trim($_POST['last_name']);
-$employee_id = !empty($_POST['employee_id']) ? trim($_POST['employee_id']) : null;
-$role        = trim($_POST['role']);
-$department  = !empty($_POST['department_id']) ? intval($_POST['department_id']) : null;
-
-if (!$first_name || !$last_name) {
-    echo json_encode(["error" => "First and last name required"]);
-    exit;
-}
-
-// Handle profile image upload
-$profile_image_path = null;
-if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-    $uploadDir = "../uploads/";
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+    if (empty($email)) {
+        echo json_encode(["success" => false, "message" => "Email cannot be empty."]);
+        exit;
     }
 
-    $fileTmp  = $_FILES['profile_image']['tmp_name'];
-    $fileName = time() . "_" . basename($_FILES['profile_image']['name']);
-    $target   = $uploadDir . $fileName;
+    // ✅ Check duplicate email but exclude current user
+    $stmtCheck = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+    $stmtCheck->bind_param("si", $email, $id);
+    $stmtCheck->execute();
+    $stmtCheck->store_result();
+    if ($stmtCheck->num_rows > 0) {
+        echo json_encode(["success" => false, "message" => "Email already exists for another user."]);
+        exit;
+    }
+    $stmtCheck->close();
 
-    // Validate file type (only images)
-    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (in_array($_FILES['profile_image']['type'], $allowed_types)) {
-        if (move_uploaded_file($fileTmp, $target)) {
-            // Save relative path instead of ../uploads
-            $profile_image_path = "uploads/" . $fileName;
+    // ✅ Update user (with or without password)
+    if (!empty($password)) {
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("
+            UPDATE users 
+            SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, password=?, role=?, profile_image=?
+            WHERE id=?
+        ");
+        $stmt->bind_param("ssssssssi", $employee_id, $first_name, $middle_name, $last_name, $email, $hashedPassword, $role, $profile_image, $id);
+    } else {
+        $stmt = $conn->prepare("
+            UPDATE users 
+            SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, role=?, profile_image=?
+            WHERE id=?
+        ");
+        $stmt->bind_param("sssssssi", $employee_id, $first_name, $middle_name, $last_name, $email, $role, $profile_image, $id);
+    }
+
+    if ($stmt->execute()) {
+        // ✅ Clear departments first
+        $conn->query("DELETE FROM user_departments WHERE user_id = $id");
+
+        // ✅ Re-insert departments only if provided
+        if (!empty($departments)) {
+            $stmt2 = $conn->prepare("INSERT INTO user_departments (user_id, department_id, is_primary) VALUES (?, ?, ?)");
+            foreach ($departments as $dept) {
+                $deptId = intval($dept["id"]);
+                $isPrimary = !empty($dept["primary"]) ? 1 : 0;
+                $stmt2->bind_param("iii", $id, $deptId, $isPrimary);
+                $stmt2->execute();
+            }
+            $stmt2->close();
         }
+
+        echo json_encode(["success" => true, "message" => "User updated successfully."]);
+    } else {
+        echo json_encode(["success" => false, "message" => $stmt->error]);
     }
+    $stmt->close();
 }
-
-if ($profile_image_path) {
-    $sql = "UPDATE users 
-            SET first_name = ?, middle_name = ?, last_name = ?, employee_id = ?, role = ?, department_id = ?, profile_image = ?
-            WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssssisi", $first_name, $middle_name, $last_name, $employee_id, $role, $department, $profile_image_path, $userId);
-} else {
-    $sql = "UPDATE users 
-            SET first_name = ?, middle_name = ?, last_name = ?, employee_id = ?, role = ?, department_id = ?
-            WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssssii", $first_name, $middle_name, $last_name, $employee_id, $role, $department, $userId);
-}
-
-if ($stmt->execute()) {
-    echo json_encode([
-        "success" => "User updated successfully",
-        "profile_image" => $profile_image_path // send back for frontend update
-    ]);
-} else {
-    echo json_encode(["error" => "Error updating user"]);
-}
+$conn->close();
