@@ -1,55 +1,45 @@
 <?php
-require 'connection_db.php';
-session_start();
+require_once "connection_db.php";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $employee_id   = trim($_POST['employee_id'] ?? '');
-    $first_name    = trim($_POST['first_name']);
-    $middle_name   = trim($_POST['middle_name'] ?? '');
-    $last_name     = trim($_POST['last_name']);
-    $email         = trim($_POST['email']);
-    $password      = $_POST['password'];
-    $role          = $_POST['role'];
-    $department_id = ($role === 'user' && !empty($_POST['department_id']))
-        ? intval($_POST['department_id'])
-        : null;
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $employee_id   = $_POST["employee_id"] ?? "";
+    $first_name    = $_POST["first_name"] ?? "";
+    $middle_name   = $_POST["middle_name"] ?? "";
+    $last_name     = $_POST["last_name"] ?? "";
+    $email         = $_POST["email"] ?? "";
+    $password      = $_POST["password"] ?? "";
+    $role          = $_POST["role"] ?? "";
+    $profile_image = $_POST["profile_image"] ?? "";
 
-    // Validate required fields
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($role)) {
-        echo "<script>alert('Please fill out all required fields.'); window.history.back();</script>";
+    // 🔹 Parse departments (support JSON or normal array)
+    $departmentsRaw = $_POST["department_ids"] ?? [];
+    if (is_string($departmentsRaw)) {
+        $departments = json_decode($departmentsRaw, true);
+        if (!is_array($departments)) $departments = [];
+    } elseif (is_array($departmentsRaw)) {
+        $departments = [];
+        foreach ($departmentsRaw as $id) {
+            $departments[] = ["id" => intval($id), "primary" => 0];
+        }
+    } else {
+        $departments = [];
+    }
+
+    if (empty($departments)) {
+        echo json_encode(["success" => false, "message" => "No department selected"]);
         exit;
     }
 
-    // Handle profile image upload
-    $profile_image = null;
-    if (!empty($_FILES['profile_image']['name'])) {
-        $targetDir = __DIR__ . "/../uploads/"; // absolute folder
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0777, true); // create if not exists
-        }
-
-        $fileName   = time() . "_" . basename($_FILES['profile_image']['name']);
-        $targetFile = $targetDir . $fileName;
-
-        // Allow only image types
-        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
-        if (in_array($_FILES['profile_image']['type'], $allowed_types)) {
-            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $targetFile)) {
-                // Save web-accessible relative path
-                $profile_image = "uploads/" . $fileName;
-            }
-        }
-    }
 
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $conn->prepare("
         INSERT INTO users 
-        (employee_id, first_name, middle_name, last_name, email, password, role, department_id, profile_image)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (employee_id, first_name, middle_name, last_name, email, password, role, profile_image)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->bind_param(
-        "sssssssis",
+        "ssssssss",
         $employee_id,
         $first_name,
         $middle_name,
@@ -57,18 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email,
         $hashedPassword,
         $role,
-        $department_id,
         $profile_image
     );
 
     if ($stmt->execute()) {
-        echo "<script>alert('User added successfully.'); window.location.href='../dashboards/admin-dashboard.php';</script>";
-    } else {
-        echo "<script>alert('Error adding user: possibly duplicate email.'); window.history.back();</script>";
-    }
+        $new_user_id = $stmt->insert_id;
 
+        // 🔹 Insert departments with is_primary
+        $stmt2 = $conn->prepare("INSERT INTO user_departments (user_id, department_id, is_primary) VALUES (?, ?, ?)");
+        foreach ($departments as $dept) {
+            $deptId = intval($dept["id"]);
+            $isPrimary = !empty($dept["primary"]) ? 1 : 0;
+            $stmt2->bind_param("iii", $new_user_id, $deptId, $isPrimary);
+            $stmt2->execute();
+        }
+        $stmt2->close();
+
+        echo json_encode(["success" => true, "message" => "User added successfully."]);
+    } else {
+        echo json_encode(["success" => false, "message" => $stmt->error]);
+    }
     $stmt->close();
-    $conn->close();
-} else {
-    echo "<script>alert('Invalid request method.'); window.history.back();</script>";
 }
+$conn->close();

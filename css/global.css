@@ -397,3 +397,59 @@
   background-color: #198754;
   color: white;
 }
+
+/* Make floating widget wider */
+#onlineUsersPopup {
+  min-width: 350px; /* adjust as you like */
+  max-width: 500px;
+}
+
+/* Optional: style list better */
+#onlineUsersList .list-group-item {
+  font-size: 0.9rem;
+  border-bottom: 1px solid #eee;
+}
+
+#onlineUsersList .list-group-item:last-child {
+  border-bottom: none;
+}
+
+/* Button content wraps */
+#departmentField .dropdown-toggle {
+  white-space: normal;
+  text-align: left;
+  min-height: 40px;
+}
+
+/* Styling for department chips */
+.dept-badge {
+  display: inline-block;
+  background: #f0f0f0;
+  border-radius: 12px;
+  padding: 2px 8px;
+  margin: 2px;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+/* Department badges inside dropdown button */
+#adminEditDepartmentField .dropdown-toggle {
+  white-space: normal;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px; /* keeps height consistent */
+  text-align: left;
+}
+
+#adminEditDepartmentField .dept-badge {
+  display: inline-block;
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  margin: 2px 0;
+  word-break: break-word;
+}

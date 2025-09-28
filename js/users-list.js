@@ -27,17 +27,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
           let statusChecked = user.status === "active" ? "checked" : "";
 
+          // ✅ Handle multi-department array or legacy single department
+          let departmentsDisplay = "-";
+          if (Array.isArray(user.departments) && user.departments.length > 0) {
+            departmentsDisplay = user.departments
+              .map(
+                (d) =>
+                  `<span class="dept-badge bg-success text-white">${d.name}</span>`
+              )
+              .join(" ");
+          } else if (user.department_name) {
+            departmentsDisplay = `<span class="dept-badge">${user.department_name}</span>`;
+          }
+
           let row = `
           <tr>
             <td><img src="${image}" class="rounded-circle" width="50" height="50" style="object-fit:cover;"></td>
             <td>${user.first_name} ${user.middle_name || ""} ${
             user.last_name
           }</td>
-            <td>${user.department_name || "-"}</td>
+            <td>${departmentsDisplay}</td>
             <td>${user.role}</td>
             <td class="text-center">
               <div class="form-check form-switch">
-                <input class="form-check-input toggleStatus" type="checkbox" data-id="${
+                <input class="form-check-input toggleStatus bg-success border-white" type="checkbox" data-id="${
                   user.id
                 }" ${statusChecked}>
                 <label>${user.status}</label>
@@ -59,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
           tbody.insertAdjacentHTML("beforeend", row);
         });
 
-        // Attach events
+        // Re-bind events
         document.querySelectorAll(".toggleStatus").forEach((toggle) => {
           toggle.addEventListener("change", function () {
             const userId = this.dataset.id;
@@ -67,7 +80,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const confirmMsg = `Are you sure you want to set this user as ${newStatus}?`;
 
             if (!confirm(confirmMsg)) {
-              // Revert the toggle state if cancelled
               this.checked = !this.checked;
               return;
             }
@@ -81,10 +93,9 @@ document.addEventListener("DOMContentLoaded", function () {
               .then((data) => {
                 if (!data.success) {
                   alert("Failed to update status");
-                  // Revert if backend failed
                   this.checked = !this.checked;
                 } else {
-                  loadUsers(departmentId); // Refresh list
+                  loadUsers(departmentId);
                 }
               })
               .catch((err) => {
@@ -122,16 +133,11 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("../backend/get_departments.php")
       .then((res) => res.json())
       .then((depts) => {
-        // Populate modal select
-        let modalSelect = document.getElementById("admin_edit_department");
-        modalSelect.innerHTML = `<option value="">-- Select Department --</option>`;
-
         // Populate filter select
         let filterSelect = document.getElementById("adminDepartmentFilter");
         filterSelect.innerHTML = `<option value="">All Departments</option>`;
 
         depts.forEach((d) => {
-          modalSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
           filterSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
         });
       });
@@ -170,8 +176,111 @@ document.addEventListener("DOMContentLoaded", function () {
           user.employee_id || "";
         document.getElementById("admin_edit_email").value = user.email || "";
         document.getElementById("admin_edit_role").value = user.role || "";
-        document.getElementById("admin_edit_department").value =
-          user.department_id || "";
+
+        // ==== MULTI DEPARTMENT DROPDOWN WITH PRIMARY ====
+        const departmentField = document.getElementById(
+          "adminEditDepartmentField"
+        );
+        const departmentDropdown = document.getElementById(
+          "adminEditDepartmentDropdown"
+        );
+        const hiddenInput = document.getElementById("admin_edit_departments");
+        const dropdownBtn = departmentField.querySelector(".dropdown-toggle");
+
+        departmentDropdown.innerHTML = "";
+        hiddenInput.value = "";
+
+        fetch("../backend/get_departments.php")
+          .then((res) => res.json())
+          .then((departments) => {
+            departmentDropdown.innerHTML = departments
+              .map(
+                (d) => `
+      <li class="d-flex align-items-center px-2">
+        <label class="dropdown-item flex-grow-1 mb-0 px-2">
+          <input type="checkbox" value="${d.id}" data-name="${d.name}" class="dept-checkbox me-2"> ${d.name}
+        </label>
+        <input type="radio" name="editPrimaryDept" value="${d.id}" class="dept-primary ms-4" title="Set Primary">
+      </li>`
+              )
+              .join("");
+
+            const userDeptIds = (user.departments || []).map((d) =>
+              String(d.id)
+            );
+            const primaryDeptId = (user.departments || []).find(
+              (d) => d.is_primary
+            )?.id;
+
+            departmentDropdown
+              .querySelectorAll(".dept-checkbox")
+              .forEach((checkbox) => {
+                if (userDeptIds.includes(checkbox.value)) {
+                  checkbox.checked = true;
+                }
+                checkbox.addEventListener("change", () => {
+                  const radio = departmentDropdown.querySelector(
+                    `.dept-primary[value="${checkbox.value}"]`
+                  );
+                  if (!checkbox.checked && radio.checked) {
+                    radio.checked = false;
+                  }
+                  updateSelected();
+                });
+              });
+
+            departmentDropdown
+              .querySelectorAll(".dept-primary")
+              .forEach((radio) => {
+                if (String(radio.value) === String(primaryDeptId)) {
+                  radio.checked = true;
+                }
+                radio.addEventListener("change", () => {
+                  const checkbox = departmentDropdown.querySelector(
+                    `.dept-checkbox[value="${radio.value}"]`
+                  );
+                  if (!checkbox.checked) checkbox.checked = true;
+                  updateSelected();
+                });
+              });
+
+            updateSelected();
+          });
+
+        function updateSelected() {
+          const selectedCheckboxes = Array.from(
+            departmentDropdown.querySelectorAll(".dept-checkbox:checked")
+          );
+
+          let selected = selectedCheckboxes.map((c) => {
+            const deptId = c.value;
+            const primaryRadio = departmentDropdown.querySelector(
+              `.dept-primary[value="${deptId}"]`
+            );
+            return {
+              id: deptId,
+              primary: primaryRadio?.checked || false,
+            };
+          });
+
+          hiddenInput.value = JSON.stringify(selected);
+
+          const selectedNames = selectedCheckboxes.map((c) => {
+            const deptId = c.value;
+            const isPrimary = departmentDropdown.querySelector(
+              `.dept-primary[value="${deptId}"]`
+            ).checked;
+            return c.dataset.name + (isPrimary ? " ⭐" : "");
+          });
+
+          if (selectedNames.length === 0) {
+            dropdownBtn.innerHTML = "Select Departments";
+          } else {
+            dropdownBtn.innerHTML = selectedNames
+              .map((n) => `<span class="dept-badge">${n}</span>`)
+              .join(" ");
+          }
+        }
 
         let modal = new bootstrap.Modal(
           document.getElementById("editUserModal")
@@ -184,6 +293,16 @@ document.addEventListener("DOMContentLoaded", function () {
     .getElementById("adminEditUserForm")
     .addEventListener("submit", function (e) {
       e.preventDefault();
+
+      // Capture old primary before update
+      const oldDepartments = JSON.parse(
+        document.getElementById("admin_edit_departments").value || "[]"
+      );
+      const oldPrimary = (oldDepartments.find((d) => d.primary) || {}).id;
+      const oldPrimaryName = oldPrimary
+        ? document.querySelector(`.dept-checkbox[value="${oldPrimary}"]`)
+            ?.dataset.name
+        : null;
 
       let formData = new FormData();
       formData.append(
@@ -206,10 +325,16 @@ document.addEventListener("DOMContentLoaded", function () {
         "employee_id",
         document.getElementById("admin_edit_employee_id").value
       );
-      formData.append("role", document.getElementById("admin_edit_role").value);
       formData.append(
-        "department_id",
-        document.getElementById("admin_edit_department").value
+        "email",
+        document.getElementById("admin_edit_email").value
+      );
+      formData.append("role", document.getElementById("admin_edit_role").value);
+
+      // departments (hidden JSON input)
+      formData.append(
+        "departments",
+        document.getElementById("admin_edit_departments").value
       );
 
       let fileInput = document.getElementById("admin_edit_profile_image");
@@ -223,13 +348,38 @@ document.addEventListener("DOMContentLoaded", function () {
       })
         .then((res) => res.json())
         .then((data) => {
-          alert(data.success || data.error);
           if (data.success) {
+            // Parse new primary from hidden input after update
+            const newDepartments = JSON.parse(
+              document.getElementById("admin_edit_departments").value || "[]"
+            );
+            const newPrimary = (newDepartments.find((d) => d.primary) || {}).id;
+            const newPrimaryName = newPrimary
+              ? document.querySelector(`.dept-checkbox[value="${newPrimary}"]`)
+                  ?.dataset.name
+              : null;
+
+            let message = data.message || "User updated successfully.";
+            if (
+              oldPrimaryName &&
+              newPrimaryName &&
+              oldPrimaryName !== newPrimaryName
+            ) {
+              message += ` Changed primary department from ${oldPrimaryName} to ${newPrimaryName}.`;
+            }
+
+            alert(message);
             loadUsers();
             bootstrap.Modal.getInstance(
               document.getElementById("editUserModal")
             ).hide();
+          } else {
+            alert("Error: " + (data.message || "Update failed."));
           }
+        })
+        .catch((err) => {
+          console.error("Update failed:", err);
+          alert("Unexpected error occurred.");
         });
     });
 });
@@ -245,7 +395,6 @@ function toggleUserStatus(userId, currentStatus) {
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {
-        // Update the toggle visually
         const toggle = document.querySelector(`#status-toggle-${userId}`);
         if (toggle) {
           toggle.checked = newStatus === "active";
