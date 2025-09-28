@@ -533,7 +533,7 @@ if ($loggedInUserRole === 'supervisor') {
                     </div>
                     <div class="col text-end">
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                            <i class="fa fa-user-plus"></i> Add User
+                            <i class="fa fa-user-plus"></i> Create User
                         </button>
                     </div>
                 </div>
@@ -915,9 +915,39 @@ if ($loggedInUserRole === 'supervisor') {
 
     <script>
         function confirmRegistration() {
+            // Collect selected departments
+            const checkboxes = document.querySelectorAll("#departmentDropdown input[type=checkbox]:checked");
+            const primaryRadio = document.querySelector("#departmentDropdown input[type=radio]:checked");
+
+            const departments = [];
+
+            checkboxes.forEach(cb => {
+                departments.push({
+                    id: parseInt(cb.value),
+                    primary: primaryRadio && parseInt(primaryRadio.value) === parseInt(cb.value) ? 1 : 0
+                });
+            });
+
+            if (departments.length === 0) {
+                alert("Please select at least one department.");
+                return false;
+            }
+
+            // Remove previous hidden input if exists
+            const existingInput = document.querySelector("#addUserModal form input[name=departments]");
+            if (existingInput) existingInput.remove();
+
+            // Create hidden input with JSON value
+            const hiddenInput = document.createElement("input");
+            hiddenInput.type = "hidden";
+            hiddenInput.name = "departments";
+            hiddenInput.value = JSON.stringify(departments);
+            document.querySelector("#addUserModal form").appendChild(hiddenInput);
+
             return confirm("Register the account?");
         }
     </script>
+
 
 
     <!-- AOS JS -->
