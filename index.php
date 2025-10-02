@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resono WMT System</title>
+    <title>NEXUS</title>
     <!---ICON--->
     <script src="https://kit.fontawesome.com/92cde7fc6f.js" crossorigin="anonymous"></script>
     <link rel="icon" type="image/x-icon" href="assets/RESONO_logo.ico">

@@ -85,6 +85,23 @@ foreach ($users as $user) {
 
     $logs = getLogs($conn, $userId, $monthStart, $monthEnd);
 
+    /*if (empty($logs)) {
+        fputcsv($fh, [
+            $userName,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            $deptName,
+            '',
+            "No data for selected period"
+        ]);
+        continue;
+    }*/
+
     foreach ($logs as $log) {
         $desc = getDescription($conn, $log['task_description_id']);
         if (stripos($desc, "end shift") !== false) continue;

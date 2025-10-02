@@ -3,6 +3,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form id="adminEditUserForm">
+                <input type="hidden" id="admin_edit_current_photo" name="current_photo">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
