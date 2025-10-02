@@ -266,7 +266,7 @@ function addActionButtonsCell(row, log) {
 
     // Show modal
     const modal = new bootstrap.Modal(
-      document.getElementById("userAmendmentModal")
+      document.getElementById("userAmendmentModal") //<--- TRIGGER FOR REQUEST MODAL
     );
     modal.show();
   });
