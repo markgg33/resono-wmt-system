@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 $userId   = $_SESSION['user_id'] ?? null;
 $userRole = $_SESSION['role'] ?? null;
 
-if (!$userId || !$userRole || !in_array($userRole, ['admin', 'executive', 'hr'])) {
+if (!$userId || !$userRole || !in_array($userRole, ['admin', 'executive', 'hr', 'supervisor'])) {
   echo json_encode(["status" => "error", "message" => "Unauthorized"]);
   exit;
 }
@@ -62,6 +62,9 @@ $result = $conn->query($query);
 $requests = [];
 if ($result) {
   while ($row = $result->fetch_assoc()) {
+    if ($row['requester_id'] == $row['recipient_id']) {
+      continue;
+    }
     $requests[] = $row;
   }
 }

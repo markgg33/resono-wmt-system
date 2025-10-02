@@ -195,14 +195,15 @@ if ($loggedInUserRole === 'supervisor') {
                 <div class="main-title mb-4 d-flex justify-content-between align-items-center">
                     <h1 class="fw-bold">STATUS DASHBOARD</h1>
 
-                    <?php if ($loggedInUserRole !== 'supervisor'): ?>
-                        <!-- Department Filter (all except supervisor can filter all depts) -->
+                    <?php if (in_array($loggedInUserRole, ['admin', 'executive', 'hr', 'supervisor'])): ?>
+                        <!-- Department Filter (admins, hr, executives, supervisors) -->
                         <div>
                             <select id="dashDepartmentFilter" class="form-select shadow-sm">
                                 <option value="">All Departments</option>
                             </select>
                         </div>
                     <?php endif; ?>
+
                 </div>
 
                 <div class="card shadow-sm rounded-3">
@@ -219,7 +220,9 @@ if ($loggedInUserRole === 'supervisor') {
                             </thead>
                             <tbody id="statusTable"></tbody>
                         </table>
+
                     </div>
+                    <div id="paginationControls" class="my-3 d-flex justify-content-center"></div>
                 </div>
             </div>
 
@@ -243,7 +246,6 @@ if ($loggedInUserRole === 'supervisor') {
                             <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
                                 <i class="fas fa-chart-pie"></i> Task Distribution
                             </button>
-
                             <div id="month-filter" style="display:none;">
                                 <h5 class="fw-bold">Select Month</h5>
                                 <select id="monthSelector" class="form-select"></select>
@@ -252,6 +254,26 @@ if ($loggedInUserRole === 'supervisor') {
 
                         <!-- Chart + Data -->
                         <div class="col-md-9">
+                            <div id="date-range-filter">
+                                <h5 class="fw-bold">Select Date Range</h5>
+                                <div class="row mb-2">
+                                    <div class="col">
+                                        <input type="date" id="bar_Start_Date" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <input type="date" id="bar_End_Date" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <select id="barMode" class="form-select">
+                                            <option value="daily">Daily View</option>
+                                            <option value="monthly">Monthly View (FTE)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col">
+                                        <button class="btn btn-success w-100" id="applyDateRange">Apply</button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="card shadow p-3 mb-4" style="height: 500px;">
                                 <canvas id="visualizationChart"></canvas>
                                 <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
@@ -408,78 +430,6 @@ if ($loggedInUserRole === 'supervisor') {
                 </div>
             </div>
 
-            <!---ADD USERS PAGE (REMOVE SOON)>
-            <div id="add-users-page" class="page-content">
-                <div class="main-title">
-                    <h1 class="fw-bold">ADD USERS</h1>
-                </div>
-
-                <div class="card p-4">
-                    <form action="../backend/add_user.php" method="POST" enctype="multipart/form-data" onsubmit="return confirmRegistration()">
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="employee_id" class="form-label">Employee ID (Optional)</label>
-                                <input type="text" class="form-control" id="employee_id" name="employee_id" placeholder="e.g. 2024-0012">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="first_name" class="form-label">First Name <span style="color:red;">*</span></label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="middle_name" class="form-label">Middle Name</label>
-                                <input type="text" class="form-control" id="middle_name" name="middle_name">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="last_name" class="form-label">Last Name <span style="color:red;">*</span></label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" required>
-                            </div>
-                            <div class="col-md-4 mt-3">
-                                <label for="email" class="form-label">Email <span style="color:red;">*</span></label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com" required>
-                            </div>
-                            <div class="col-md-4 mt-3">
-                                <label for="password" class="form-label">Password <span style="color:red;">*</span></label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="password" name="password" placeholder="••••••" required>
-                                    <span class="input-group-text toggle-password" onclick="togglePassword('password')">
-                                        <i class="fa-solid fa-eye-slash"></i>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-3">
-                                <label for="role" class="form-label">Role <span style="color:red;">*</span></label>
-                                <select class="form-select" id="role" name="role" required onchange="toggleDepartmentField()">
-                                    <option value="">-- Select Role --</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="executive">Executive</option>
-                                    <option value="hr">HR</option>
-                                    <option value="user">Employee</option>
-                                    <option value="client">Client</option>
-                                    <option value="supervisor">Supervisor</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mt-3">
-                                <label for="profile_image" class="form-label">Profile Image</label>
-                                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
-                            </div>
-                            <div class="col-md-4 mt-3" id="departmentField" style="display: none;">
-                                <label for="department_id" class="form-label">Department <span style="color:red;">*</span></label>
-                                <select class="form-select" id="department_id" name="department_id">
-                                    <option value="">-- Select Department --</option>
-                                </select>
-                            </div>
-
-                        </div>
-                        <button type="submit" class="btn-register">Register</button>
-                    </form>
-                </div>
-
-                
-
-            </div--->
-
             <!---DEPARTMENTS PAGE--->
             <div id="departments-page" class="page-content">
                 <div class="main-title">
@@ -629,8 +579,10 @@ if ($loggedInUserRole === 'supervisor') {
                             </button>
                             <input type="text" class="form-control mx-2" id="edit_work_mode_field" disabled>
                             <button class="btn btn-primary d-none" id="saveWorkModeNameBtnDynamic">Save</button>
+                            <button class="btn btn-danger ms-2 d-none" id="deleteWorkModeBtn">Delete Work Mode</button>
                         </div>
                     </div>
+
 
                     <!-- Task Descriptions -->
                     <div class="mb-3">
@@ -752,8 +704,6 @@ if ($loggedInUserRole === 'supervisor') {
                             </form>
                             <div id="passwordMessage" class="mt-2"></div>
                         </div>
-
-
                     </div>
                 </div>
             </div>
@@ -787,6 +737,7 @@ if ($loggedInUserRole === 'supervisor') {
                         <!-- Filled by JS -->
                     </tbody>
                 </table>
+                <div id="admin-requests-pagination" class="mt-3 text-center"></div>
             </div>
 
             <!---ADMIN DTR AMENDMENT USER--->

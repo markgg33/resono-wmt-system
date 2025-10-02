@@ -148,6 +148,7 @@ $loggedInUserRole = $_SESSION['role'];
                                 </tr>
                             </thead>
                             <tbody id="statusTable"></tbody>
+                            <div id="paginationControls" class="mt-3 d-flex justify-content-center"></div>
                         </table>
                     </div>
                 </div>
@@ -188,7 +189,6 @@ $loggedInUserRole = $_SESSION['role'];
                         <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
                             <i class="fas fa-chart-pie"></i> Task Distribution
                         </button>
-
                         <div id="month-filter" style="display:none;">
                             <h5 class="fw-bold">Select Month</h5>
                             <select id="monthSelector" class="form-select"></select>
@@ -197,6 +197,20 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <!-- Chart + Data -->
                     <div class="col-md-9">
+                        <div id="date-range-filter">
+                            <h5 class="fw-bold">Select Date Range</h5>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="date" id="bar_Start_Date" class="form-control mb-2">
+                                </div>
+                                <div class="col">
+                                    <input type="date" id="bar_End_Date" class="form-control mb-2">
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-success w-100" id="applyDateRange">Apply</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card shadow p-3 mb-4" style="height: 500px;">
                             <canvas id="visualizationChart"></canvas>
                             <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
@@ -343,10 +357,10 @@ $loggedInUserRole = $_SESSION['role'];
     <?php include "../modals/edit-department-modal.php"; ?>
 
     <!---JS LINKS HERE--->
+    <script src="../js/load-statuses.js"></script>
     <script src="../js/global-loader.js"></script>
     <script src="../js/data-visualization.js"></script>
     <script src="../js/departments.js"></script>
-    <script src="../js/load-statuses.js"></script>
     <script src="../js/edit-profile.js"></script>
     <script src="../js/toggle-department.js"></script>
     <script src="../js/real-time-clock.js"></script>
