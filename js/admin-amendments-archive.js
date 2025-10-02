@@ -107,9 +107,9 @@ document.addEventListener("DOMContentLoaded", function () {
       btn.textContent = i;
       btn.classList.add(
         "btn",
-        "btn-sm",
+        "btn-md",
         "mx-1",
-        i === pagination.currentPage ? "btn-primary" : "btn-outline-secondary"
+        i === pagination.currentPage ? "btn-success" : "btn-outline-success"
       );
       btn.addEventListener("click", () => {
         currentPage = i;

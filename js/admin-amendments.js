@@ -1,143 +1,188 @@
-document.addEventListener("DOMContentLoaded", () => {
-  loadAmendments();
-});
+  function showLoading() {
+    let loader = document.createElement("div");
+    loader.id = "loading-overlay";
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+    loader.style.display = "flex";
+    loader.style.justifyContent = "center";
+    loader.style.alignItems = "center";
+    loader.style.zIndex = "9999";
+    loader.innerHTML = `<div class="spinner-border text-light" role="status"></div>`;
+    document.body.appendChild(loader);
+  }
 
-function openAmendmentModal(requestId) {
-  fetch("../backend/dtr-requests/get_admin_amendments.php")
-    .then((res) => res.json())
-    .then((data) => {
-      const req = data.requests.find((r) => r.id == requestId);
-      if (!req) return;
+  function hideLoading() {
+    let loader = document.getElementById("loading-overlay");
+    if (loader) loader.remove();
+  }
 
-      document.getElementById("amendmentModalBody").innerHTML = `
-        <p><b>Requester:</b> ${req.requester_name}</p>
-        <p><b>Task:</b> ${req.task_description}</p>
-        <p><b>Date:</b> ${req.date}</p>
-        <p><b>Requested Field:</b> ${req.field}</p>
-        <p><b>Old Value:</b> ${req.old_value}</p>
-        <p><b>New Value:</b> ${req.new_value}</p>
-        <p><b>Reason:</b> ${req.reason}</p>
-      `;
+  document.addEventListener("DOMContentLoaded", () => {
+    loadAmendments();
+  });
 
-      const approveBtn = document.getElementById("approveBtn");
-      const rejectBtn = document.getElementById("rejectBtn");
+  function openAmendmentModal(requestId) {
+    fetch("../backend/dtr-requests/get_admin_amendments.php")
+      .then((res) => res.json())
+      .then((data) => {
+        const req = data.requests.find((r) => r.id == requestId);
+        if (!req) return;
 
-      // Reset first (important: avoids keeping old disabled state or handlers)
-      approveBtn.disabled = false;
-      rejectBtn.disabled = false;
-      approveBtn.onclick = null;
-      rejectBtn.onclick = null;
+        document.getElementById("amendmentModalBody").innerHTML = `
+          <p><b>Requester:</b> ${req.requester_name}</p>
+          <p><b>Task:</b> ${req.task_description}</p>
+          <p><b>Date:</b> ${req.date}</p>
+          <p><b>Requested Field:</b> ${req.field}</p>
+          <p><b>Old Value:</b> ${req.old_value}</p>
+          <p><b>New Value:</b> ${req.new_value}</p>
+          <p><b>Reason:</b> ${req.reason}</p>
+        `;
 
-      // Normalize status for safety
-      const status = req.status.trim().toLowerCase();
+        const approveBtn = document.getElementById("approveBtn");
+        const rejectBtn = document.getElementById("rejectBtn");
 
-      if (status === "for approval" || status === "pending") {
-        // Reset buttons for new request
+        // Reset first (important: avoids keeping old disabled state or handlers)
         approveBtn.disabled = false;
         rejectBtn.disabled = false;
-        approveBtn.textContent = "Approve";
-        rejectBtn.textContent = "Reject";
-        approveBtn.style.display = "inline-block";
-        rejectBtn.style.display = "inline-block";
+        approveBtn.onclick = null;
+        rejectBtn.onclick = null;
 
-        approveBtn.onclick = () => handleDecision(req.id, "Approved");
-        rejectBtn.onclick = () => handleDecision(req.id, "Rejected");
-      } else {
-        // Already processed
-        approveBtn.disabled = true;
-        rejectBtn.disabled = true;
+        // Normalize status for safety
+        const status = req.status.trim().toLowerCase();
 
-        if (status === "approved") {
-          approveBtn.textContent = "Already Approved";
-          rejectBtn.style.display = "none";
-        } else if (status === "rejected") {
-          rejectBtn.textContent = "Already Rejected";
-          approveBtn.style.display = "none";
+        if (status === "for approval" || status === "pending") {
+          // Reset buttons for new request
+          approveBtn.disabled = false;
+          rejectBtn.disabled = false;
+          approveBtn.textContent = "Approve";
+          rejectBtn.textContent = "Reject";
+          approveBtn.style.display = "inline-block";
+          rejectBtn.style.display = "inline-block";
+
+          approveBtn.onclick = () => handleDecision(req.id, "Approved");
+          rejectBtn.onclick = () => handleDecision(req.id, "Rejected");
+        } else {
+          // Already processed
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+
+          if (status === "approved") {
+            approveBtn.textContent = "Already Approved";
+            rejectBtn.style.display = "none";
+          } else if (status === "rejected") {
+            rejectBtn.textContent = "Already Rejected";
+            approveBtn.style.display = "none";
+          }
         }
-      }
 
-      new bootstrap.Modal(document.getElementById("amendmentModal")).show();
-    });
-}
+        new bootstrap.Modal(document.getElementById("amendmentModal")).show();
+      });
+  }
 
-function loadAmendments() {
-  fetch("../backend/dtr-requests/get_dtr_requests.php")
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.status === "success") {
+  //UPDATED WITH FALLBACK
+  function loadAmendments() {
+    fetch("../backend/dtr-requests/get_dtr_requests.php")
+      .then((res) => res.json())
+      .then((data) => {
         const table = document.getElementById("admin-amendments-table");
         table.innerHTML = "";
 
-        data.requests.forEach((req) => {
-          const statusBadge =
-            req.status === "Pending"
-              ? `<span class="badge bg-warning text-dark">For Approval</span>`
-              : req.status === "Approved"
-              ? `<span class="badge bg-success">Approved</span>`
-              : `<span class="badge bg-danger">Rejected</span>`;
+        if (
+          data.status === "success" &&
+          Array.isArray(data.requests) &&
+          data.requests.length > 0
+        ) {
+          data.requests.forEach((req) => {
+            const statusBadge =
+              req.status === "Pending"
+                ? `<span class="badge bg-warning text-dark">For Approval</span>`
+                : req.status === "Approved"
+                ? `<span class="badge bg-success">Approved</span>`
+                : `<span class="badge bg-danger">Rejected</span>`;
 
-          const row = `
+            const row = `
+              <tr>
+                <td><span class="badge bg-success">${req.request_uid}</span></td>
+                <td>${req.requester_name}</td>
+                <td>${statusBadge}</td>
+                <td>
+                  <button class="btn btn-sm btn-success" onclick="openAmendmentModal(${req.id})">View</button>
+                </td>
+              </tr>`;
+            table.innerHTML += row;
+          });
+        } else {
+          // 🔹 Fallback message row
+          table.innerHTML = `
             <tr>
-              <td><span class="badge bg-success">${req.request_uid}</span></td>
-              <td>${req.requester_name}</td>
-              <td>${statusBadge}</td>
-              <td>
-                <button class="btn btn-sm btn-success" onclick="openAmendmentModal(${req.id})">View</button>
+              <td colspan="4" class="text-center text-muted py-3">
+                No new requests at the moment
               </td>
             </tr>`;
-          table.innerHTML += row;
-        });
-      }
-    });
-}
-
-function handleDecision(id, decision) {
-  if (
-    !confirm(`Are you sure you want to ${decision.toLowerCase()} this request?`)
-  )
-    return;
-
-  // Disable modal buttons immediately to prevent double click
-  document
-    .querySelectorAll("#amendmentModal .decision-btn")
-    .forEach((btn) => (btn.disabled = true));
-
-  fetch("../backend/dtr-requests/process_amendment.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: JSON.stringify({
-      request_id: id,
-      decision: decision,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.status === "success") {
-        // Refresh table
-        loadAmendments();
-
-        // Close modal smoothly
-        const modalEl = document.getElementById("amendmentModal");
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) {
-          setTimeout(() => {
-            modal.hide();
-          }, 300); // slight delay for UX
         }
+      })
+      .catch((err) => {
+        console.error("Error loading amendments:", err);
+        const table = document.getElementById("admin-amendments-table");
+        table.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center text-danger py-3">
+              Failed to load requests. Please try again later.
+            </td>
+          </tr>`;
+      });
+  }
 
-        alert(`Request has been ${decision.toLowerCase()} successfully.`);
-      } else {
-        alert("Error: " + data.message);
-      }
+  function handleDecision(id, decision) {
+    if (
+      !confirm(`Are you sure you want to ${decision.toLowerCase()} this request?`)
+    )
+      return;
+
+    // Disable modal buttons immediately to prevent double click
+    document
+      .querySelectorAll("#amendmentModal .decision-btn")
+      .forEach((btn) => (btn.disabled = true));
+
+    fetch("../backend/dtr-requests/process_amendment.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: JSON.stringify({
+        request_id: id,
+        decision: decision,
+      }),
     })
-    .catch((err) => {
-      hideLoading();
-      alert("Something went wrong: " + err);
-    })
-    .finally(() => {
-      // Re-enable modal buttons (just in case)
-      document
-        .querySelectorAll("#amendmentModal .decision-btn")
-        .forEach((btn) => (btn.disabled = false));
-    });
-}
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          // Refresh table
+          loadAmendments();
+
+          // Close modal smoothly
+          const modalEl = document.getElementById("amendmentModal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) {
+            setTimeout(() => {
+              modal.hide();
+            }, 300); // slight delay for UX
+          }
+
+          alert(`Request has been ${decision.toLowerCase()} successfully.`);
+        } else {
+          alert("Error: " + data.message);
+        }
+      })
+      .catch((err) => {
+        hideLoading();
+        alert("Something went wrong: " + err);
+      })
+      .finally(() => {
+        // Re-enable modal buttons (just in case)
+        document
+          .querySelectorAll("#amendmentModal .decision-btn")
+          .forEach((btn) => (btn.disabled = false));
+      });
+  }

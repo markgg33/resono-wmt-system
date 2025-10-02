@@ -56,57 +56,92 @@ function statusBadge(status) {
 }
 
 // ================================
-// Load admin requests into table
+// Admin Requests with Pagination
 // ================================
-function loadAdminRequests() {
-  $.getJSON(
-    "../backend/dtr-requests/get_admin_requests.php",
-    function (data) {
-      const tbody = $("#admin-request-table");
-      tbody.empty();
+let currentAdminPage = 1;
 
-      if (!data.requests || data.requests.length === 0) {
-        tbody.append(
-          '<tr><td colspan="13" class="text-center">No requests yet</td></tr>'
-        );
-        return;
+function fetchAdminRequests(page = 1) {
+  fetch(`../backend/dtr-requests/get_admin_requests.php?page=${page}`)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      if (data.status === "success") {
+        renderAdminRequestTable(data.requests);
+        renderAdminPagination(data.pagination);
+      } else {
+        console.error("Error:", data.message);
       }
+    })
+    .catch((err) => console.error("Error fetching admin requests:", err));
+}
 
-      data.requests.forEach((req) => {
-        const oldVal = formatTo12Hour(req.old_value);
-        const newVal = formatTo12Hour(req.new_value);
+function renderAdminRequestTable(requests) {
+  const tbody = document.getElementById("admin-request-table");
+  tbody.innerHTML = "";
 
-        const actionBtn =
-          req.status === "Pending"
-            ? `<button class="btn btn-sm btn-success admin-edit-btn" data-id="${req.id}">Edit</button>`
-            : "-";
+  if (!requests || requests.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="13" class="text-center text-muted">No requests yet</td>
+      </tr>`;
+    return;
+  }
 
-        tbody.append(`
-        <tr>
-          <td><span class="badge bg-success">${req.request_uid}</span></td>
-          <td>${req.date || "-"}</td>
-          <td>${req.task_description || "-"}</td>
-          <td>${req.field}</td>
-          <td>${oldVal}</td>
-          <td>${newVal}</td>
-          <td>${req.reason}</td>
-          <td>${req.recipient_name || "-"} (${req.recipient_role || ""})</td>
-          <td>${statusBadge(req.status)}</td>
-          <td>${
-            req.processed_by_name
-              ? req.processed_by_name +
-                " (" +
-                (req.processed_by_role || "") +
-                ")"
-              : "-"
-          }</td>
-          <td>${req.requested_at || "-"}</td>
-          <td>${actionBtn}</td>
-        </tr>
-      `);
-      });
-    }
-  );
+  requests.forEach((req) => {
+    const oldVal = formatTo12Hour(req.old_value);
+    const newVal = formatTo12Hour(req.new_value);
+
+    const actionBtn =
+      req.status === "Pending"
+        ? `<button class="btn btn-sm btn-success admin-edit-btn" data-id="${req.id}">Edit</button>`
+        : "-";
+
+    const row = `
+      <tr>
+        <td><span class="badge bg-success">${req.request_uid}</span></td>
+        <td>${req.date || "-"}</td>
+        <td>${req.task_description || "-"}</td>
+        <td>${req.field}</td>
+        <td>${oldVal}</td>
+        <td>${newVal}</td>
+        <td>${req.reason}</td>
+        <td>${req.recipient_name || "-"} (${req.recipient_role || ""})</td>
+        <td>${statusBadge(req.status)}</td>
+        <td>${
+          req.processed_by_name
+            ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
+            : "-"
+        }</td>
+        <td>${req.requested_at || "-"}</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    tbody.insertAdjacentHTML("beforeend", row);
+  });
+}
+
+function renderAdminPagination(pagination) {
+  const container = document.getElementById("admin-requests-pagination");
+  container.innerHTML = "";
+
+  if (!pagination || pagination.totalPages <= 1) return;
+
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.classList.add(
+      "btn",
+      "btn-md",
+      "mx-1",
+      i === pagination.currentPage ? "btn-success" : "btn-outline-success"
+    );
+    btn.addEventListener("click", () => {
+      currentAdminPage = i;
+      fetchAdminRequests(i);
+    });
+    container.appendChild(btn);
+  }
 }
 
 // ================================
@@ -141,21 +176,18 @@ $(document).on("click", ".admin-edit-btn", function () {
           $("#adminEditOldValue").val(req.end_time || "--");
           $("#adminEditNewValue").attr("type", "time");
         } else {
-          // Any other string field, like remarks
           $("#adminEditOldValue").val(req.old_value || "--");
           $("#adminEditNewValue").attr("type", "text");
         }
       };
 
-      // Trigger updateOldValue when field changes
       $("#adminEditField").off("change").on("change", updateOldValue);
-      updateOldValue(); // Initial call
+      updateOldValue();
 
       // Show modal
-      const modal = new bootstrap.Modal(
+      new bootstrap.Modal(
         document.getElementById("adminEditAmendmentModal")
-      );
-      modal.show();
+      ).show();
     }
   );
 });
@@ -173,7 +205,7 @@ $("#adminEditAmendmentForm").on("submit", function (e) {
     function (res) {
       if (res.status === "success") {
         alert("Request updated successfully");
-        loadAdminRequests();
+        fetchAdminRequests(currentAdminPage); // reload current page
         $("#adminEditAmendmentModal").modal("hide");
       } else {
         alert(res.message);
@@ -187,5 +219,5 @@ $("#adminEditAmendmentForm").on("submit", function (e) {
 // Initial load
 // ================================
 $(document).ready(function () {
-  loadAdminRequests();
+  fetchAdminRequests(currentAdminPage);
 });

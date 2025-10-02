@@ -244,39 +244,25 @@ function addActionButtonsCell(row, log) {
       ? formatDateForDisplay(new Date(log.date))
       : "--";
 
-    // Default: show current start_time in Old Value
-    document.getElementById("oldValue").value = ensureHHMMSS(log.start_time);
+    // Old values
+    document.getElementById("oldStartTime").value = log.start_time
+      ? ensureHHMMSS(log.start_time)
+      : "--";
+    document.getElementById("oldEndTime").value = log.end_time
+      ? ensureHHMMSS(log.end_time)
+      : "--";
 
-    // Reset new value + reason
-    document.getElementById("newValue").value = "";
+    // Reset new fields
+    document.getElementById("newDate").value = "";
+    document.getElementById("newStartTime").value = "";
+    document.getElementById("newEndTime").value = "";
     document.getElementById("reason").value = "";
+    document.getElementById("recipientSelect").value = "";
 
-    // Handle "Field to Amend" dropdown changes
+    // Default: start_time
     const fieldSelect = document.getElementById("field");
-    fieldSelect.onchange = () => {
-      switch (fieldSelect.value) {
-        case "start_time":
-          document.getElementById("oldValue").value = ensureHHMMSS(
-            log.start_time
-          );
-          document.getElementById("newValue").type = "time";
-          break;
-        case "end_time":
-          document.getElementById("oldValue").value = log.end_time
-            ? ensureHHMMSS(log.end_time)
-            : "--";
-          document.getElementById("newValue").type = "time";
-          break;
-        case "remarks":
-          document.getElementById("oldValue").value = log.remarks || "--";
-          document.getElementById("newValue").type = "text";
-          break;
-      }
-    };
-
-    // Default dropdown → set "start_time"
     fieldSelect.value = "start_time";
-    document.getElementById("newValue").type = "time";
+    fieldSelect.dispatchEvent(new Event("change"));
 
     // Show modal
     const modal = new bootstrap.Modal(
@@ -289,6 +275,59 @@ function addActionButtonsCell(row, log) {
   cell.appendChild(editBtn);
   cell.appendChild(amendBtn);
 }
+
+// ============================================
+// ========== AMENDMENT MODAL LOGIC ===========
+// ============================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  const fieldSelect = document.getElementById("field");
+  const newStart = document.getElementById("newStartTime");
+  const newEnd = document.getElementById("newEndTime");
+  const newDate = document.getElementById("newDate");
+  const newDateWrapper = document.getElementById("newDateWrapper");
+  const oldStart = document.getElementById("oldStartTime");
+  const oldEnd = document.getElementById("oldEndTime");
+
+  // Toggle visibility & enable/disable based on field selection
+  fieldSelect.addEventListener("change", () => {
+    const selected = fieldSelect.value;
+
+    if (selected === "start_time") {
+      newDateWrapper.classList.add("d-none");
+      newDate.value = "";
+      newStart.disabled = false;
+      newEnd.disabled = true;
+      newEnd.value = "";
+    } else if (selected === "end_time") {
+      newDateWrapper.classList.add("d-none");
+      newDate.value = "";
+      newStart.disabled = true;
+      newStart.value = "";
+      newEnd.disabled = false;
+    } else if (selected === "date") {
+      // Enable all three
+      newDateWrapper.classList.remove("d-none");
+      newStart.disabled = false;
+      newEnd.disabled = false;
+    }
+  });
+
+  // Optional: Recalculate total duration live if Date is being amended
+  [newStart, newEnd].forEach((input) => {
+    input.addEventListener("change", () => {
+      if (fieldSelect.value === "date" && newStart.value && newEnd.value) {
+        const total = computeTimeDiff(
+          `${newStart.value}:00`,
+          `${newEnd.value}:00`
+        );
+        console.log("⏱ New total duration:", total);
+        // You could display this somewhere if needed
+      }
+    });
+  });
+});
+
 // ============================================
 // ========== START TASK LOGIC ===============
 // ============================================
