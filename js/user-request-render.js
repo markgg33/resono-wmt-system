@@ -74,60 +74,63 @@ const userAmendment = (() => {
   }
 
   // Open edit modal
-  $(document).on("click", ".user-edit-btn", function () {
-    const id = $(this).data("id");
-    $.getJSON(
-      "../backend/dtr-requests/get_user_amendments.php",
-      function (data) {
-        const req = data.requests.find((r) => r.id == id);
-        if (!req) return;
+$(document).on("click", ".user-edit-btn", function () {
+  const id = $(this).data("id");
+  $.getJSON("../backend/dtr-requests/get_user_amendments.php", function (data) {
+    const req = data.requests.find((r) => r.id == id);
+    if (!req) return;
 
-        $("#userEditRequestId").val(req.id);
-        $("#userEditRequester").val(req.requester_name);
-        $("#userEditDate").val(req.date || "--");
-        $("#userEditField").val(req.field);
-        $("#userEditOldValue").val(req.old_value || "--"); // always old_value
-        $("#userEditNewValue").val(req.new_value);
-        $("#userEditReason").val(req.reason || "");
-        // Populate recipients then preselect current one
-        $.getJSON("../backend/dtr-requests/get_recipients.php", function (res) {
-          const select = $("#userEditRecipientId");
-          select
-            .empty()
-            .append('<option value="">-- Select Recipient --</option>');
-          if (res.status === "success" && Array.isArray(res.recipients)) {
-            res.recipients.forEach((r) => {
-              select.append(
-                `<option value="${r.id}" ${
-                  r.id == req.recipient_id ? "selected" : ""
-                }>
-          ${r.username} (${r.role})
-        </option>`
-              );
-            });
-          }
+    // Fill data
+    $("#userEditRequestId").val(req.id);
+    $("#userEditDate").val(req.date || "--");
+    $("#userEditField").val(req.field);
+    $("#userEditOldStartTime").val(req.old_start_time || "--");
+    $("#userEditOldEndTime").val(req.old_end_time || "--");
+    $("#userEditOldDate").val(req.old_date || "--");
+    $("#userEditNewStartTime").val(req.new_start_time || "");
+    $("#userEditNewEndTime").val(req.new_end_time || "");
+    $("#userEditNewDate").val(req.new_date || "");
+    $("#userEditReason").val(req.reason || "");
+
+    // Recipients
+    $.getJSON("../backend/dtr-requests/get_recipients.php", function (res) {
+      const select = $("#userEditRecipientSelect");
+      select.empty().append('<option value="">-- Select Recipient --</option>');
+      if (res.status === "success" && Array.isArray(res.recipients)) {
+        res.recipients.forEach((r) => {
+          select.append(
+            `<option value="${r.id}" ${r.id == req.recipient_id ? "selected" : ""}>
+              ${r.username} (${r.role})
+            </option>`
+          );
         });
-
-        // Change type for time fields
-        $("#userEditField")
-          .off("change")
-          .on("change", function () {
-            const field = $(this).val();
-            $("#userEditOldValue").val(req.old_value || "--"); // always old_value
-            $("#userEditNewValue").attr(
-              "type",
-              field === "start_time" || field === "end_time" ? "time" : "text"
-            );
-          });
-        $("#userEditField").trigger("change");
-
-        const modal = new bootstrap.Modal(
-          document.getElementById("userEditAmendmentModal")
-        );
-        modal.show();
       }
-    );
+    });
+
+    // Field logic (disable/enabled inputs)
+    function toggleFields(field) {
+      $("#userEditDateWrapper").addClass("d-none");
+      $("#userEditNewStartTime").prop("disabled", false);
+      $("#userEditNewEndTime").prop("disabled", false);
+
+      if (field === "start_time") {
+        $("#userEditNewEndTime").prop("disabled", true);
+      } else if (field === "end_time") {
+        $("#userEditNewStartTime").prop("disabled", true);
+      } else if (field === "date") {
+        $("#userEditDateWrapper").removeClass("d-none");
+      }
+    }
+
+    $("#userEditField").off("change").on("change", function () {
+      toggleFields($(this).val());
+    });
+    toggleFields(req.field);
+
+    new bootstrap.Modal(document.getElementById("userEditAmendmentModal")).show();
   });
+});
+
 
   // Submit form with confirmation
   $("#userEditAmendmentForm").on("submit", function (e) {

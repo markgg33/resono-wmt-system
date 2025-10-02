@@ -1,52 +1,84 @@
 <!-- Edit User Amendment Modal -->
 <div class="modal fade" id="userEditAmendmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Edit Your DTR Amendment Request</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Edit Your DTR Amendment Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="userEditAmendmentForm">
+          <input type="hidden" id="userEditRequestId" name="id">
+
+          <!-- Original Date -->
+          <div class="mb-3">
+            <label class="form-label">Original Date</label>
+            <input type="text" id="userEditDate" class="form-control" readonly>
+          </div>
+
+          <!-- Field to Amend -->
+          <div class="mb-3">
+            <label class="form-label">Field to Amend</label>
+            <select id="userEditField" name="field" class="form-select" required>
+              <option value="start_time">Start Time</option>
+              <option value="end_time">End Time</option>
+              <option value="date">Date</option>
+            </select>
+          </div>
+
+          <!-- Old Values -->
+          <div class="row mb-3">
+            <div class="col">
+              <label class="form-label">Old Start Time</label>
+              <input type="text" id="userEditOldStartTime" class="form-control" readonly>
             </div>
-            <div class="modal-body">
-                <form id="userEditAmendmentForm">
-                    <input type="hidden" id="userEditRequestId" name="id">
-
-                    <div class="mb-3">
-                        <label>Date</label>
-                        <input type="text" id="userEditDate" class="form-control" readonly>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Field to Amend</label>
-                        <select id="userEditField" name="field" class="form-control" required>
-                            <option value="start_time">Start Time</option>
-                            <option value="end_time">End Time</option>
-                            <option value="remarks">Remarks</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Old Value</label>
-                        <input type="text" id="userEditOldValue" class="form-control" readonly>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>New Value</label>
-                        <input type="text" id="userEditNewValue" name="new_value" class="form-control" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Reason</label>
-                        <textarea id="userEditReason" name="reason" class="form-control" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Recipient</label>
-                        <select id="userEditRecipientId" name="recipient_id" class="form-control" required></select>
-                    </div>
-
-                    <button type="submit" class="btn btn-success">Update Request</button>
-                </form>
+            <div class="col">
+              <label class="form-label">Old End Time</label>
+              <input type="text" id="userEditOldEndTime" class="form-control" readonly>
             </div>
-        </div>
+          </div>
+
+          <!-- Old Date -->
+          <div class="mb-3">
+            <label class="form-label">Old Date</label>
+            <input type="text" id="userEditOldDate" class="form-control" readonly>
+          </div>
+
+          <!-- Wrapper for date amendment -->
+          <div class="mb-3 d-none" id="userEditDateWrapper">
+            <label class="form-label">New Date</label>
+            <input type="date" id="userEditNewDate" name="new_date" class="form-control">
+          </div>
+
+          <!-- New Times -->
+          <div class="row mb-3">
+            <div class="col">
+              <label class="form-label">New Start Time</label>
+              <input type="time" id="userEditNewStartTime" name="new_start_time" class="form-control">
+            </div>
+            <div class="col">
+              <label class="form-label">New End Time</label>
+              <input type="time" id="userEditNewEndTime" name="new_end_time" class="form-control">
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div class="mb-3">
+            <label class="form-label">Reason</label>
+            <textarea id="userEditReason" name="reason" class="form-control" rows="3" required></textarea>
+          </div>
+
+          <!-- Recipient -->
+          <div class="mb-3">
+            <label class="form-label">Recipient</label>
+            <select id="userEditRecipientSelect" name="recipient_id" class="form-select" required>
+              <option value="">-- Select Recipient --</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-success">Update Request</button>
+        </form>
+      </div>
     </div>
+  </div>
 </div>

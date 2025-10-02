@@ -145,7 +145,7 @@ function renderAdminPagination(pagination) {
 }
 
 // ================================
-// Open admin edit modal
+// Open admin edit modal (patched for new logic)
 // ================================
 $(document).on("click", ".admin-edit-btn", function () {
   const id = $(this).data("id");
@@ -156,33 +156,48 @@ $(document).on("click", ".admin-edit-btn", function () {
       const req = data.requests.find((r) => r.id == id);
       if (!req) return;
 
-      // Populate modal fields
+      // Populate hidden + common fields
       $("#adminEditRequestId").val(req.id);
       $("#adminEditDate").val(req.date || "--");
       $("#adminEditField").val(req.field);
       $("#adminEditReason").val(req.reason || "");
-      $("#adminEditNewValue").val(req.new_value || "");
-
-      // Load recipients and select the current one
       loadAdminRecipients("adminEditRecipientSelect", req.recipient_id);
 
-      // Set old value based on field type
-      const updateOldValue = () => {
+      // Set old values
+      $("#adminEditOldStartTime").val(formatTo12Hour(req.start_time) || "--");
+      $("#adminEditOldEndTime").val(formatTo12Hour(req.end_time) || "--");
+      $("#adminEditOldDate").val(req.date || "--");
+
+      // Reset new inputs
+      $("#adminEditNewDate").val(req.new_date || "");
+      $("#adminEditNewStartTime").val(req.new_start_time || "");
+      $("#adminEditNewEndTime").val(req.new_end_time || "");
+
+      // Apply logic based on selected field
+      const applyFieldLogic = () => {
         const field = $("#adminEditField").val();
+        const dateWrapper = $("#adminEditDateWrapper");
+
+        // reset
+        dateWrapper.addClass("d-none");
+        $("#adminEditNewDate").prop("disabled", true);
+        $("#adminEditNewStartTime").prop("disabled", true);
+        $("#adminEditNewEndTime").prop("disabled", true);
+
         if (field === "start_time") {
-          $("#adminEditOldValue").val(req.start_time || "--");
-          $("#adminEditNewValue").attr("type", "time");
+          $("#adminEditNewStartTime").prop("disabled", false);
         } else if (field === "end_time") {
-          $("#adminEditOldValue").val(req.end_time || "--");
-          $("#adminEditNewValue").attr("type", "time");
-        } else {
-          $("#adminEditOldValue").val(req.old_value || "--");
-          $("#adminEditNewValue").attr("type", "text");
+          $("#adminEditNewEndTime").prop("disabled", false);
+        } else if (field === "date") {
+          dateWrapper.removeClass("d-none");
+          $("#adminEditNewDate").prop("disabled", false);
+          $("#adminEditNewStartTime").prop("disabled", false);
+          $("#adminEditNewEndTime").prop("disabled", false);
         }
       };
 
-      $("#adminEditField").off("change").on("change", updateOldValue);
-      updateOldValue();
+      $("#adminEditField").off("change").on("change", applyFieldLogic);
+      applyFieldLogic();
 
       // Show modal
       new bootstrap.Modal(
