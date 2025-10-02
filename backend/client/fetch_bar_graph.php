@@ -2,94 +2,125 @@
 require_once "../connection_db.php";
 header("Content-Type: application/json");
 
-$year   = isset($_GET['year']) ? intval($_GET['year']) : date("Y");
-$deptId = isset($_GET['dept_id']) && $_GET['dept_id'] !== '' ? intval($_GET['dept_id']) : null;
+$deptId     = isset($_GET['dept_id']) ? intval($_GET['dept_id']) : 0;
+$startDate  = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+$endDate    = isset($_GET['end_date']) ? $_GET['end_date'] : null;
+$mode       = isset($_GET['mode']) ? $_GET['mode'] : "daily"; // NEW
 
-$params = [$year, $year];
-$types  = "ii";
-
-$deptConditionLogs    = "";
-$deptConditionArchive = "";
-
-if ($deptId) {
-    $deptConditionLogs    = " AND u.department_id = ? ";
-    $deptConditionArchive = " AND t.department_id = ? ";
-    $params[] = $deptId;
-    $params[] = $deptId;
-    $types   .= "ii";
+if (!$deptId || !$startDate || !$endDate) {
+    echo json_encode(["success" => false, "message" => "Missing parameters"]);
+    exit;
 }
 
-$sql = "
-    SELECT MONTH(t.date) AS month,
-           d.name AS department,
-           ROUND(SUM(TIME_TO_SEC(t.total_duration))/3600, 2) AS total_hours,
-           COUNT(t.id) AS task_count
-    FROM task_logs t
-    LEFT JOIN users u ON t.user_id = u.id
-    LEFT JOIN departments d ON u.department_id = d.id
-    WHERE YEAR(t.date) = ? $deptConditionLogs
-    GROUP BY MONTH(t.date), d.name
+// ========== MODE: DAILY ==========
+if ($mode === "daily") {
+    $sql = "
+    SELECT DATE(t.date) AS d,
+           ROUND(SUM(TIME_TO_SEC(t.total_duration))/3600, 2) AS total_hours
+    FROM (
+        SELECT task_description_id, total_duration, date, user_id 
+        FROM task_logs
+        UNION ALL
+        SELECT task_description_id, total_duration, date, user_id 
+        FROM task_logs_archive
+    ) t
+    INNER JOIN user_departments ud 
+        ON t.user_id = ud.user_id AND ud.is_primary = 1
+    WHERE t.date BETWEEN ? AND ? 
+      AND ud.department_id = ?
+    GROUP BY d
+    ORDER BY d
+    ";
 
-    UNION ALL
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssi", $startDate, $endDate, $deptId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    SELECT MONTH(STR_TO_DATE(CONCAT(t.archived_month, '-01'), '%Y-%m-%d')) AS month,
-           d.name AS department,
-           ROUND(SUM(TIME_TO_SEC(t.total_duration))/3600, 2) AS total_hours,
-           COUNT(t.id) AS task_count
-    FROM task_logs_archive t
-    LEFT JOIN departments d ON t.department_id = d.id
-    WHERE YEAR(STR_TO_DATE(CONCAT(t.archived_month, '-01'), '%Y-%m-%d')) = ? $deptConditionArchive
-    GROUP BY MONTH(STR_TO_DATE(CONCAT(t.archived_month, '-01'), '%Y-%m-%d')), d.name
-";
-
-$stmt = $conn->prepare($sql);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$result = $stmt->get_result();
-
-// Step 1: Collect real data
-$raw = [];
-while ($row = $result->fetch_assoc()) {
-    $m = intval($row['month']);
-    $dept = $row['department'] ?? "Unassigned";
-
-    if (!isset($raw[$m])) {
-        $raw[$m] = [];
+    $raw = [];
+    while ($row = $result->fetch_assoc()) {
+        $raw[$row['d']] = floatval($row['total_hours']);
     }
-    $raw[$m][$dept] = [
-        "hours" => floatval($row['total_hours']),
-        "count" => intval($row['task_count'])
-    ];
-}
 
-// Step 2: Fill all months Jan-Dec (1–12)
-$data = [];
-for ($m = 1; $m <= 12; $m++) {
-    if (isset($raw[$m])) {
-        $data[$m] = $raw[$m];
-    } else {
-        $data[$m] = []; // no data → empty
+    $labels = [];
+    $values = [];
+    $period = new DatePeriod(
+        new DateTime($startDate),
+        new DateInterval('P1D'),
+        (new DateTime($endDate))->modify('+1 day')
+    );
+
+    foreach ($period as $dt) {
+        $d = $dt->format("Y-m-d");
+        $labels[] = $dt->format("M d, Y");
+        $values[] = $raw[$d] ?? 0;
     }
+
+    echo json_encode([
+        "success" => true,
+        "labels"  => $labels,
+        "values"  => $values,
+        "fte"     => null // not used in daily
+    ]);
+    exit;
 }
 
-// Step 3: Prepare labels as month names (IMPORTANT!)
-$labels = [];
-$values = [];
-for ($m = 1; $m <= 12; $m++) {
-    $labels[] = date("F", mktime(0, 0, 0, $m, 1)); // e.g., "January"
-    
-    $monthData = $data[$m] ?? [];
-    $total = 0;
-    foreach ($monthData as $dept => $info) {
-        $total += $info['hours']; // sum all departments
+// ========== MODE: MONTHLY ==========
+if ($mode === "monthly") {
+    $sql = "
+    SELECT DATE_FORMAT(t.date, '%Y-%m') AS ym,
+           ROUND(SUM(TIME_TO_SEC(t.total_duration))/3600, 2) AS total_hours
+    FROM (
+        SELECT task_description_id, total_duration, date, user_id 
+        FROM task_logs
+        UNION ALL
+        SELECT task_description_id, total_duration, date, user_id 
+        FROM task_logs_archive
+    ) t
+    INNER JOIN user_departments ud 
+        ON t.user_id = ud.user_id AND ud.is_primary = 1
+    WHERE t.date BETWEEN ? AND ? 
+      AND ud.department_id = ?
+    GROUP BY ym
+    ORDER BY ym
+    ";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssi", $startDate, $endDate, $deptId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $labels = [];
+    $values = [];
+    $fteData = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $month = $row['ym']; // e.g. 2025-09
+        $totalHours = floatval($row['total_hours']);
+
+        // Calculate working days in month (Mon-Fri)
+        $dt = new DateTime($month . "-01");
+        $daysInMonth = (int)$dt->format("t");
+        $workingDays = 0;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $day = new DateTime("{$month}-$d");
+            $w = (int)$day->format("N");
+            if ($w < 6) $workingDays++;
+        }
+
+        $fteEquivalent = $workingDays * 8;
+        $fte = $fteEquivalent > 0 ? round($totalHours / $fteEquivalent, 2) : 0;
+
+        $labels[] = $dt->format("F Y");
+        $values[] = $totalHours;
+        $fteData[] = ["month" => $dt->format("F Y"), "fte" => $fte];
     }
-    $values[] = $total;
+
+    echo json_encode([
+        "success" => true,
+        "labels"  => $labels,
+        "values"  => $values,
+        "fte"     => $fteData
+    ]);
+    exit;
 }
-
-echo json_encode([
-    "labels" => $labels,
-    "values" => $values
-]);
-

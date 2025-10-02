@@ -75,27 +75,63 @@ monthSel.addEventListener("change", () => {
   if (chartType === "pie") loadPieChart();
 });
 
-// Load chart
+// Show date range only for bar chart
 function loadGraph() {
   if (!selectedDept || !chartType) return;
 
   if (chartType === "bar") {
     document.getElementById("month-filter").style.display = "none";
+    document.getElementById("date-range-filter").style.display = "block";
     loadBarChart();
   } else {
     document.getElementById("month-filter").style.display = "block";
+    document.getElementById("date-range-filter").style.display = "none";
     loadPieChart();
   }
 }
 
-// Bar chart
+// Apply date range filter
+document.getElementById("applyDateRange").addEventListener("click", () => {
+  if (chartType === "bar") loadBarChart();
+});
+
 function loadBarChart() {
   showLoader();
-  fetch(`../backend/client/fetch_bar_graph.php?dept_id=${selectedDept}`)
+
+  const start = document.getElementById("bar_Start_Date").value;
+  const end = document.getElementById("bar_End_Date").value;
+
+  // default daily mode
+  let mode = document.querySelector("#barMode")?.value || "daily";
+
+  let url = `../backend/client/fetch_bar_graph.php?dept_id=${selectedDept}&mode=${mode}`;
+
+  if (start && end) {
+    url += `&start_date=${start}&end_date=${end}`;
+  } else {
+    const year = new Date().getFullYear();
+    url += `&start_date=${year}-01-01&end_date=${year}-12-31`;
+  }
+
+  fetch(url)
     .then((res) => res.json())
     .then((data) => {
-      renderChart("bar", data.labels, data.values, "Monthly Production Hours");
-      document.getElementById("taskList").innerHTML = ""; // clear task list
+      renderChart("bar", data.labels, data.values, "Production Hours");
+
+      if (mode === "monthly" && data.fte) {
+        let html =
+          "<h5 class='fw-bold'>FTE per Month</h5><ul class='list-group'>";
+        data.fte.forEach((f) => {
+          html += `<li class="list-group-item d-flex justify-content-between">
+                    <span>${f.month}</span>
+                    <span>${f.fte} FTE</span>
+                   </li>`;
+        });
+        html += "</ul>";
+        document.getElementById("taskList").innerHTML = html;
+      } else {
+        document.getElementById("taskList").innerHTML = "";
+      }
     })
     .catch((err) => console.error("Bar chart error:", err))
     .finally(() => hideLoader());
