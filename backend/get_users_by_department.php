@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
     exit;
 }
 
-$role = $_SESSION['role'];
+$role = strtolower($_SESSION['role']);
 if (!in_array($role, ["admin", "hr", "executive", "supervisor"])) {
     // Only these roles can list users
     echo json_encode([]);
@@ -23,10 +23,15 @@ if (!isset($_GET['department_id']) || $_GET['department_id'] === "") {
 
 $departmentId = intval($_GET['department_id']);
 
-$sql = "SELECT id, CONCAT(first_name, ' ', last_name) AS name
-        FROM users
-        WHERE department_id = ? 
-        ORDER BY first_name, last_name";
+// ✅ Correct query using user_departments
+$sql = "
+    SELECT u.id, CONCAT(u.first_name, ' ', u.last_name) AS name
+    FROM users u
+    INNER JOIN user_departments ud ON u.id = ud.user_id
+    WHERE ud.department_id = ?
+      AND ud.is_primary = 1
+    ORDER BY u.first_name, u.last_name
+";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $departmentId);

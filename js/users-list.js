@@ -176,6 +176,9 @@ document.addEventListener("DOMContentLoaded", function () {
           user.employee_id || "";
         document.getElementById("admin_edit_email").value = user.email || "";
         document.getElementById("admin_edit_role").value = user.role || "";
+        // After fetching user
+        document.getElementById("admin_edit_current_photo").value =
+          user.profile_image || ""; //NEW
 
         // ==== MULTI DEPARTMENT DROPDOWN WITH PRIMARY ====
         const departmentField = document.getElementById(
@@ -338,8 +341,16 @@ document.addEventListener("DOMContentLoaded", function () {
       );
 
       let fileInput = document.getElementById("admin_edit_profile_image");
+      let currentPhoto = document.getElementById(
+        "admin_edit_current_photo"
+      ).value;
+
       if (fileInput.files.length > 0) {
+        // ✅ Only append if a new file is selected
         formData.append("profile_image", fileInput.files[0]);
+      } else {
+        // ✅ Send a separate flag/value so PHP knows to keep the old one
+        formData.append("keep_existing_image", currentPhoto);
       }
 
       fetch("../backend/update_user_admin.php", {
