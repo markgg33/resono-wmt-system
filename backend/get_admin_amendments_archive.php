@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 // Check role
 $userRole = $_SESSION['role'] ?? null;
-if (!in_array($userRole, ['admin', 'executive', 'hr'])) {
+if (!in_array($userRole, ['admin', 'executive', 'hr', 'supervisor'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit;
 }

@@ -2,6 +2,7 @@
 require_once "connection_db.php";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
     $id          = intval($_POST["id"] ?? 0);
     $employee_id = $_POST["employee_id"] ?? "";
     $first_name  = $_POST["first_name"] ?? "";
@@ -9,8 +10,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $last_name   = $_POST["last_name"] ?? "";
     $email       = trim($_POST["email"] ?? "");
     $role        = $_POST["role"] ?? "";
-    $profile_image = $_POST["profile_image"] ?? "";
     $password    = $_POST["password"] ?? "";
+    $profile_image = $_POST["current_photo"] ?? "";
+
+    // ===== Handle image upload safely =====
+    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/../uploads/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+        $fileName = time() . '_' . basename($_FILES['profile_image']['name']);
+        $targetFile = $uploadDir . $fileName;
+
+        if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $targetFile)) {
+            $profile_image = 'uploads/' . $fileName; // relative path for DB
+        } else {
+            echo json_encode(["success" => false, "message" => "Failed to upload image."]);
+            exit;
+        }
+    } elseif (!empty($_POST['keep_existing_image'])) {
+        $profile_image = $_POST['keep_existing_image']; // keep old image
+    } else {
+        $profile_image = 'assets/default-avatar.jpg'; // fallback default
+    }
 
     $departments = json_decode($_POST["departments"] ?? "[]", true);
 
@@ -19,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
 
-    // ✅ Check duplicate email but exclude current user
+    // ===== Check duplicate email but exclude current user =====
     $stmtCheck = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
     $stmtCheck->bind_param("si", $email, $id);
     $stmtCheck->execute();
@@ -30,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
     $stmtCheck->close();
 
-    // ✅ Update user (with or without password)
+    // ===== Update user (with or without password) =====
     if (!empty($password)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("
@@ -49,10 +70,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     if ($stmt->execute()) {
-        // ✅ Clear departments first
+
+        // ===== Clear old departments =====
         $conn->query("DELETE FROM user_departments WHERE user_id = $id");
 
-        // ✅ Re-insert departments only if provided
+        // ===== Insert new departments if any =====
         if (!empty($departments)) {
             $stmt2 = $conn->prepare("INSERT INTO user_departments (user_id, department_id, is_primary) VALUES (?, ?, ?)");
             foreach ($departments as $dept) {
@@ -68,6 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         echo json_encode(["success" => false, "message" => $stmt->error]);
     }
+
     $stmt->close();
 }
 $conn->close();

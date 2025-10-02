@@ -118,8 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!modeId) return;
 
-      // --- Work Mode Name ---
-      
+      // --- Work Mode Name + Delete Button ---
       fetch(`../backend/get_work_modes.php?id=${modeId}`)
         .then((res) => res.json())
         .then((data) => {
@@ -134,6 +133,9 @@ document.addEventListener("DOMContentLoaded", () => {
           wmGroup.innerHTML = `
       <input type="text" class="form-control" id="edit_work_mode_field" disabled>
       <button class="btn btn-outline-primary d-none" id="saveWorkModeNameBtnDynamic">Save</button>
+      <button class="btn btn-outline-danger d-none" id="deleteWorkModeBtn" title="Delete Work Mode">
+        <i class="fa fa-trash"></i>
+      </button>
       <button class="btn btn-outline-secondary toggle-edit" title="Edit Work Mode">
         <i class="fa fa-eye"></i>
       </button>
@@ -143,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const wmInput = wmGroup.querySelector("#edit_work_mode_field");
           const wmSave = wmGroup.querySelector("#saveWorkModeNameBtnDynamic");
           const wmToggle = wmGroup.querySelector(".toggle-edit");
+          const wmDelete = wmGroup.querySelector("#deleteWorkModeBtn");
 
           // ✅ Set value AFTER element is created
           wmInput.value = data.name || "";
@@ -152,6 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const editing = !wmInput.disabled;
             wmInput.disabled = editing;
             wmSave.classList.toggle("d-none", editing);
+            wmDelete.classList.toggle("d-none", editing); // 👈 show/hide delete
             wmToggle.innerHTML = `<i class="fa fa-eye${
               editing ? "" : "-slash"
             }"></i>`;
@@ -181,6 +185,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
               });
           };
+
+          // 🗑️ Delete Work Mode logic
+          wmDelete.onclick = () => {
+            if (!confirm("Delete this work mode and all its tasks?")) return;
+            fetch("../backend/delete_work_mode.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `id=${encodeURIComponent(modeId)}`, // 👈 send as POST
+            })
+              .then((res) => res.json())
+              .then((res) => {
+                if (res.success) {
+                  showSuccess("Work Mode deleted with all its tasks.");
+                  loadWorkModes();
+                  editSelect.value = "";
+                  descContainer.innerHTML = "";
+                } else {
+                  alert("Failed to delete work mode.");
+                }
+              });
+          };
         });
 
       // --- Task Descriptions ---
@@ -198,13 +223,13 @@ document.addEventListener("DOMContentLoaded", () => {
             group.className = "input-group align-items-center mb-2";
 
             group.innerHTML = `
-            <input type="text" class="form-control" value="${task.description}" disabled>
-            <button class="btn btn-outline-primary d-none">Save</button>
-            <button class="btn btn-outline-danger d-none">Delete</button>
-            <button class="btn btn-outline-secondary toggle-edit" title="Edit Task">
-              <i class="fa fa-eye"></i>
-            </button>
-          `;
+              <input type="text" class="form-control" value="${task.description}" disabled>
+              <button class="btn btn-outline-primary d-none">Save</button>
+              <button class="btn btn-outline-danger d-none">Delete</button>
+              <button class="btn btn-outline-secondary toggle-edit" title="Edit Task">
+                <i class="fa fa-eye"></i>
+              </button>
+            `;
 
             const toggle = group.querySelector(".toggle-edit");
             const input = group.querySelector("input");
@@ -247,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Save Work Mode Name
+  // Save Work Mode Name (old UI)
   saveBtn?.addEventListener("click", () => {
     const newName = nameInput.value;
     fetch("../backend/update_work_mode.php", {
@@ -313,26 +338,6 @@ function updateTaskOptions() {
         taskSelect.appendChild(opt);
       });
     });
-}
-
-// Save single task update
-function updateTask(id, btn) {
-  const input = btn.parentElement.querySelector("input");
-  fetch("../backend/update_task_description.php", {
-    method: "POST",
-    body: new URLSearchParams({ id, description: input.value }),
-  }).then(() => showSuccess("Task updated."));
-}
-
-// Delete task description
-function deleteTask(id, btn) {
-  if (!confirm("Delete this task?")) return;
-  fetch(`../backend/delete_task_description.php?id=${id}`, {
-    method: "POST",
-  }).then(() => {
-    btn.closest(".input-group").remove();
-    showSuccess("Task deleted.");
-  });
 }
 
 // Show success modal (Bootstrap)

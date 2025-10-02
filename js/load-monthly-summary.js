@@ -5,8 +5,11 @@ let selectedUser = null;
 function loadUsersByDepartment(deptId) {
   const userDropdown = document.getElementById("userDropdown");
   if (!userDropdown) return;
+
+  // Reset dropdown
   userDropdown.innerHTML = `<option value="">-- Select User --</option>`;
   selectedUser = null;
+
   if (!deptId) return;
 
   fetch(
@@ -20,11 +23,17 @@ function loadUsersByDepartment(deptId) {
         userDropdown.innerHTML = `<option value="">No users found</option>`;
         return;
       }
+
+      // ✅ Fill dropdown with user list
       users.forEach((user) => {
-        userDropdown.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+        userDropdown.insertAdjacentHTML(
+          "beforeend",
+          `<option value="${user.id}">${user.name}</option>`
+        );
       });
     })
-    .catch(() => {
+    .catch((err) => {
+      console.error("Error loading users by department:", err);
       userDropdown.innerHTML = `<option value="">Error loading users</option>`;
     });
 }

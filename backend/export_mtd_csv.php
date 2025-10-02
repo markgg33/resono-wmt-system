@@ -6,8 +6,16 @@ if (!isset($_SESSION['role']) || !isset($_SESSION['user_id'])) {
     http_response_code(403);
     exit("Unauthorized");
 }
-$userId = (int)$_SESSION['user_id'];
 
+$role = $_SESSION['role'];
+$sessionUserId = (int)$_SESSION['user_id'];
+
+// Allow admin-like roles to export other users, else fallback
+if (!empty($_GET['user_id']) && in_array($role, ["admin", "hr", "executive", "supervisor"])) {
+    $userId = (int)$_GET['user_id'];
+} else {
+    $userId = $sessionUserId;
+}
 if (!empty($_GET['month'])) {
     $month = $_GET['month'];
     $monthStart = "$month-01";

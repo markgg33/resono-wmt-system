@@ -148,8 +148,8 @@ $loggedInUserRole = $_SESSION['role'];
                                 </tr>
                             </thead>
                             <tbody id="statusTable"></tbody>
-                            <div id="paginationControls" class="mt-3 d-flex justify-content-center"></div>
                         </table>
+                        <div id="paginationControls" class="my-3 d-flex justify-content-center"></div>
                     </div>
                 </div>
             </div>
@@ -197,182 +197,182 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <!-- Chart + Data -->
                     <div class="col-md-9">
-                            <div id="date-range-filter">
-                                <h5 class="fw-bold">Select Date Range</h5>
-                                <div class="row mb-2">
-                                    <div class="col">
-                                        <input type="date" id="bar_Start_Date" class="form-control">
-                                    </div>
-                                    <div class="col">
-                                        <input type="date" id="bar_End_Date" class="form-control">
-                                    </div>
-                                    <div class="col">
-                                        <select id="barMode" class="form-select">
-                                            <option value="daily">Daily View</option>
-                                            <option value="monthly">Monthly View (FTE)</option>
-                                        </select>
-                                    </div>
-                                    <div class="col">
-                                        <button class="btn btn-success w-100" id="applyDateRange">Apply</button>
-                                    </div>
+                        <div id="date-range-filter">
+                            <h5 class="fw-bold">Select Date Range</h5>
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <input type="date" id="bar_Start_Date" class="form-control">
+                                </div>
+                                <div class="col">
+                                    <input type="date" id="bar_End_Date" class="form-control">
+                                </div>
+                                <div class="col">
+                                    <select id="barMode" class="form-select">
+                                        <option value="daily">Daily View</option>
+                                        <option value="monthly">Monthly View (FTE)</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-success w-100" id="applyDateRange">Apply</button>
                                 </div>
                             </div>
-                            <div class="card shadow p-3 mb-4" style="height: 500px;">
-                                <canvas id="visualizationChart"></canvas>
-                                <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
-                                    No chart data available for this selection.
-                                </div>
-                            </div>
-                            <div id="taskList" class="card shadow p-3"></div>
                         </div>
+                        <div class="card shadow p-3 mb-4" style="height: 500px;">
+                            <canvas id="visualizationChart"></canvas>
+                            <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
+                                No chart data available for this selection.
+                            </div>
+                        </div>
+                        <div id="taskList" class="card shadow p-3"></div>
                     </div>
                 </div>
+            </div>
 
 
 
-                <!---EDIT PROFILE USER--->
-                <div id="edit-profile-page" class="page-content">
-                    <div class="main-title">
-                        <h1 class="fw-bold">EDIT PROFILE</h1>
-                    </div>
+            <!---EDIT PROFILE USER--->
+            <div id="edit-profile-page" class="page-content">
+                <div class="main-title">
+                    <h1 class="fw-bold">EDIT PROFILE</h1>
+                </div>
 
-                    <div class="profile-card">
-                        <!-- Tabs -->
-                        <ul class="nav nav-tabs" id="profileTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileInfo" type="button" role="tab">Profile Info</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#changePassword" type="button" role="tab">Change Password</button>
-                            </li>
-                        </ul>
+                <div class="profile-card">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileInfo" type="button" role="tab">Profile Info</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#changePassword" type="button" role="tab">Change Password</button>
+                        </li>
+                    </ul>
 
-                        <!-- Tab Content -->
-                        <div class="tab-content p-3" id="profileTabsContent">
+                    <!-- Tab Content -->
+                    <div class="tab-content p-3" id="profileTabsContent">
 
-                            <!-- Profile Info Tab -->
-                            <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
-                                <form id="updateProfileForm" class="modern-form" enctype="multipart/form-data">
-                                    <div class="form-group">
-                                        <label>Employee ID</label>
-                                        <input type="text" id="edit_employee_id" class="form-control-modern">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>First Name</label>
-                                        <input type="text" id="edit_first_name" class="form-control-modern" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Middle Name</label>
-                                        <input type="text" id="edit_middle_name" class="form-control-modern">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Last Name</label>
-                                        <input type="text" id="edit_last_name" class="form-control-modern" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Email</label>
-                                        <input type="email" id="edit_email" class="form-control-modern" disabled>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Role</label>
-                                        <input type="text" id="edit_role" class="form-control-modern" disabled>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Department</label>
-                                        <select id="edit_department_select" class="form-control-modern"></select>
-                                    </div>
+                        <!-- Profile Info Tab -->
+                        <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
+                            <form id="updateProfileForm" class="modern-form" enctype="multipart/form-data">
+                                <div class="form-group">
+                                    <label>Employee ID</label>
+                                    <input type="text" id="edit_employee_id" class="form-control-modern">
+                                </div>
+                                <div class="form-group">
+                                    <label>First Name</label>
+                                    <input type="text" id="edit_first_name" class="form-control-modern" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Middle Name</label>
+                                    <input type="text" id="edit_middle_name" class="form-control-modern">
+                                </div>
+                                <div class="form-group">
+                                    <label>Last Name</label>
+                                    <input type="text" id="edit_last_name" class="form-control-modern" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="edit_email" class="form-control-modern" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Role</label>
+                                    <input type="text" id="edit_role" class="form-control-modern" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <select id="edit_department_select" class="form-control-modern"></select>
+                                </div>
 
-                                    <!-- ✅ Profile Image (preview + upload) -->
-                                    <div class="form-group">
-                                        <label>Profile Image</label>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img id="profilePreview" src="../assets/default-avatar.jpg" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
-                                            <div class="w-100">
-                                                <input type="file" id="edit_profile_image" class="form-control-modern" accept="image/*">
-                                                <small class="text-muted">JPEG/PNG, up to 5MB.</small>
-                                            </div>
+                                <!-- ✅ Profile Image (preview + upload) -->
+                                <div class="form-group">
+                                    <label>Profile Image</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img id="profilePreview" src="../assets/default-avatar.jpg" class="rounded-circle border" width="96" height="96" style="object-fit:cover;">
+                                        <div class="w-100">
+                                            <input type="file" id="edit_profile_image" class="form-control-modern" accept="image/*">
+                                            <small class="text-muted">JPEG/PNG, up to 5MB.</small>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <button type="submit" id="profileSubmitBtn" class="btn-modern btn-primary-modern">Update Profile</button>
-                                </form>
-                                <div id="profileMessage" class="mt-2"></div>
-                            </div>
+                                <button type="submit" id="profileSubmitBtn" class="btn-modern btn-primary-modern">Update Profile</button>
+                            </form>
+                            <div id="profileMessage" class="mt-2"></div>
+                        </div>
 
-                            <!-- Change Password Tab -->
-                            <div class="tab-pane fade" id="changePassword" role="tabpanel">
-                                <form id="changePasswordForm" class="modern-form">
+                        <!-- Change Password Tab -->
+                        <div class="tab-pane fade" id="changePassword" role="tabpanel">
+                            <form id="changePasswordForm" class="modern-form">
 
-                                    <div class="form-group password-group">
-                                        <label>Current Password</label>
-                                        <div class="input-group">
-                                            <input type="password" id="current_password" class="form-control" required>
-                                            <span class="input-group-text toggle-password" onclick="togglePassword('current_password')">
-                                                <i class="fa fa-eye-slash"></i>
-                                            </span>
-                                        </div>
+                                <div class="form-group password-group">
+                                    <label>Current Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="current_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('current_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
                                     </div>
+                                </div>
 
-                                    <div class="form-group password-group">
-                                        <label>New Password</label>
-                                        <div class="input-group">
-                                            <input type="password" id="new_password" class="form-control" required>
-                                            <span class="input-group-text toggle-password" onclick="togglePassword('new_password')">
-                                                <i class="fa fa-eye-slash"></i>
-                                            </span>
-                                        </div>
+                                <div class="form-group password-group">
+                                    <label>New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="new_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('new_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
                                     </div>
+                                </div>
 
-                                    <div class="form-group password-group">
-                                        <label>Confirm New Password</label>
-                                        <div class="input-group">
-                                            <input type="password" id="confirm_password" class="form-control" required>
-                                            <span class="input-group-text toggle-password" onclick="togglePassword('confirm_password')">
-                                                <i class="fa fa-eye-slash"></i>
-                                            </span>
-                                        </div>
+                                <div class="form-group password-group">
+                                    <label>Confirm New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="confirm_password" class="form-control" required>
+                                        <span class="input-group-text toggle-password" onclick="togglePassword('confirm_password')">
+                                            <i class="fa fa-eye-slash"></i>
+                                        </span>
                                     </div>
+                                </div>
 
-                                    <button type="submit" class="btn-modern btn-warning-modern">Change Password</button>
-                                </form>
-                                <div id="passwordMessage" class="mt-2"></div>
-                            </div>
+                                <button type="submit" class="btn-modern btn-warning-modern">Change Password</button>
+                            </form>
+                            <div id="passwordMessage" class="mt-2"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
 
-        <!-- GLOBAL OVERLAY LOADER WITH SPINNER -->
-        <div id="globalOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:9999;justify-content:center;align-items:center;">
-            <div class="text-center">
-                <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div class="mt-3 text-white fw-bold">Processing...</div>
+    <!-- GLOBAL OVERLAY LOADER WITH SPINNER -->
+    <div id="globalOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:9999;justify-content:center;align-items:center;">
+        <div class="text-center">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
             </div>
+            <div class="mt-3 text-white fw-bold">Processing...</div>
         </div>
+    </div>
 
-        <!---PHP MODAL--->
-        <?php include "../modals/edit-task-modal.php"; ?>
-        <?php include "../modals/admin-amendment-modal.php"; ?>
-        <?php include "../modals/user-amendment-modal.php"; ?>
-        <?php include "../modals/admin-user-profile-modal.php"; ?>
-        <?php include "../modals/admin-edit-request-modal.php"; ?>
-        <?php include "../modals/edit-department-modal.php"; ?>
+    <!---PHP MODAL--->
+    <?php include "../modals/edit-task-modal.php"; ?>
+    <?php include "../modals/admin-amendment-modal.php"; ?>
+    <?php include "../modals/user-amendment-modal.php"; ?>
+    <?php include "../modals/admin-user-profile-modal.php"; ?>
+    <?php include "../modals/admin-edit-request-modal.php"; ?>
+    <?php include "../modals/edit-department-modal.php"; ?>
 
-        <!---JS LINKS HERE--->
-        <script src="../js/load-statuses.js"></script>
-        <script src="../js/global-loader.js"></script>
-        <script src="../js/data-visualization.js"></script>
-        <script src="../js/departments.js"></script>
-        <script src="../js/edit-profile.js"></script>
-        <script src="../js/toggle-department.js"></script>
-        <script src="../js/real-time-clock.js"></script>
-        <script src="../js/toggle-password.js"></script>
-        <script src="../js/sidebar-client.js"></script>
-        <!---script src="../js/users-list.js"></script>
+    <!---JS LINKS HERE--->
+    <script src="../js/load-statuses.js"></script>
+    <script src="../js/global-loader.js"></script>
+    <script src="../js/data-visualization.js"></script>
+    <script src="../js/departments.js"></script>
+    <script src="../js/edit-profile.js"></script>
+    <script src="../js/toggle-department.js"></script>
+    <script src="../js/real-time-clock.js"></script>
+    <script src="../js/toggle-password.js"></script>
+    <script src="../js/sidebar-client.js"></script>
+    <!---script src="../js/users-list.js"></script>
     <script src="../js/admin-request-render.js"></script>
     <script src="../js/admin-amendments.js"></script>
     <script src="../js/start-tag-task.js"></script>
@@ -391,22 +391,22 @@ $loggedInUserRole = $_SESSION['role'];
 
 
 
-        <!---script>
+    <!---script>
         function confirmRegistration() {
             return confirm("Register the account?");
         }
     </script--->
 
 
-        <!-- AOS JS -->
-        <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-        <script>
-            AOS.init({
-                offset: 100, // Start animation 100px before the section is in view
-                duration: 800, // Animation duration in milliseconds
-                easing: 'ease-in-out', // Smooth transition effect
-            });
-        </script>
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            offset: 100, // Start animation 100px before the section is in view
+            duration: 800, // Animation duration in milliseconds
+            easing: 'ease-in-out', // Smooth transition effect
+        });
+    </script>
 
 </body>
 
