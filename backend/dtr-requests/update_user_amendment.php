@@ -12,34 +12,47 @@ function jsonResponse($status, $message)
 $userId = $_SESSION['user_id'] ?? null;
 if (!$userId) jsonResponse("error", "Not logged in");
 
-$id = $_POST['id'] ?? null;
-$field = $_POST['field'] ?? null;
-$newValue = $_POST['new_value'] ?? null;
-$reason = $_POST['reason'] ?? null;
+$id          = $_POST['id'] ?? null;
+$field       = $_POST['field'] ?? null;
+$reason      = $_POST['reason'] ?? null;
 $recipientId = $_POST['recipient_id'] ?? null;
 
-if (!$id || !$field || !$newValue || !$reason) jsonResponse("error", "Missing required fields");
+// Extract the new value depending on field
+$newValue = null;
+if ($field === "start_time") {
+    $newValue = $_POST['new_start_time'] ?? null;
+} elseif ($field === "end_time") {
+    $newValue = $_POST['new_end_time'] ?? null;
+} elseif ($field === "date") {
+    $newValue = $_POST['new_date'] ?? null;
+} else {
+    $newValue = $_POST['new_value'] ?? null;
+}
 
-// Validate ownership and pending status
+if (!$id || !$field || !$reason || !$newValue) {
+    jsonResponse("error", "Missing required fields");
+}
+
+// Verify ownership and pending status
 $stmt = $conn->prepare("SELECT * FROM dtr_amendments WHERE id=? AND user_id=? AND status='Pending'");
 $stmt->bind_param("ii", $id, $userId);
 $stmt->execute();
-$result = $stmt->get_result();
-$amendment = $result->fetch_assoc();
+$res = $stmt->get_result();
+$amend = $res->fetch_assoc();
 $stmt->close();
 
-if (!$amendment) jsonResponse("error", "Request not found or not editable");
+if (!$amend) jsonResponse("error", "Request not found or not editable");
 
-// Update amendment
-$stmt = $conn->prepare("
-  UPDATE dtr_amendments
-  SET field = ?, new_value = ?, reason = ?, recipient_id = ?
-  WHERE id = ? AND user_id = ?
-");
-$stmt->bind_param("sssiii", $field, $newValue, $reason, $recipientId, $id, $userId);
+// Update the record (always update new_value column, like admin)
+$stmt = $conn->prepare("UPDATE dtr_amendments SET new_value=?, reason=?, recipient_id=? WHERE id=? AND user_id=?");
+$stmt->bind_param("ssiii", $newValue, $reason, $recipientId, $id, $userId);
+
 if ($stmt->execute()) {
     jsonResponse("success", "Request updated successfully");
 } else {
-    jsonResponse("error", "Update failed");
+    jsonResponse("error", "Failed to update request");
 }
+
 $stmt->close();
+$conn->close();
+    
