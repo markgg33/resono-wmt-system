@@ -163,10 +163,12 @@ $(document).on("click", ".admin-edit-btn", function () {
       $("#adminEditReason").val(req.reason || "");
       loadAdminRecipients("adminEditRecipientSelect", req.recipient_id);
 
-      // Set old values
-      $("#adminEditOldStartTime").val(formatTo12Hour(req.start_time) || "--");
-      $("#adminEditOldEndTime").val(formatTo12Hour(req.end_time) || "--");
-      $("#adminEditOldDate").val(req.date || "--");
+      // Set old values (use the new explicit fields from backend)
+      $("#adminEditOldStartTime").val(
+        formatTo12Hour(req.old_start_time) || "--"
+      );
+      $("#adminEditOldEndTime").val(formatTo12Hour(req.old_end_time) || "--");
+      $("#adminEditOldDate").val(req.old_date || "--");
 
       // Reset new inputs
       $("#adminEditNewDate").val(req.new_date || "");

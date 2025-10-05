@@ -40,9 +40,11 @@ if (!$amend) {
     exit;
 }
 
-// Update the record (always update new_value column)
-$stmt = $conn->prepare("UPDATE dtr_amendments SET new_value=?, reason=?, recipient_id=? WHERE id=?");
-$stmt->bind_param("ssii", $new_value, $reason, $recipient_id, $id);
+// Update the record (update field + new_value + reason + recipient_id)
+$stmt = $conn->prepare("UPDATE dtr_amendments 
+    SET field=?, new_value=?, reason=?, recipient_id=? 
+    WHERE id=?");
+$stmt->bind_param("sssii", $field, $new_value, $reason, $recipient_id, $id);
 
 if ($stmt->execute()) {
     echo json_encode(["status" => "success", "message" => "Request updated successfully"]);
