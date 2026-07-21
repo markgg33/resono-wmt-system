@@ -12,6 +12,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $role        = $_POST["role"] ?? "";
     $password    = $_POST["password"] ?? "";
     $profile_image = $_POST["current_photo"] ?? "";
+    //FOR LEAVE REQUESTS
+    $vacation = floatval($_POST["vacationLeave"] ?? 0);
+    $sick = floatval($_POST["sickLeave"] ?? 0);
+    $comp = floatval($_POST["compLeave"] ?? 0);
+    $emergency = floatval($_POST["emergencyLeave"] ?? 0);
 
     // ===== Handle image upload safely =====
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
@@ -54,19 +59,70 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // ===== Update user (with or without password) =====
     if (!empty($password)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        //WITHOUT LEAVE REQUESTS
+        /*
         $stmt = $conn->prepare("
             UPDATE users 
             SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, password=?, role=?, profile_image=?
             WHERE id=?
         ");
         $stmt->bind_param("ssssssssi", $employee_id, $first_name, $middle_name, $last_name, $email, $hashedPassword, $role, $profile_image, $id);
+        */
+        //WITH LEAVE REQUESTS
+        $stmt = $conn->prepare("
+            UPDATE users 
+            SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, password=?, role=?, profile_image=?, 
+            vacation_leave=?, sick_leave=?, compassionate_leave=?, emergency_leave=?
+            WHERE id=?");
+        $stmt->bind_param(
+            "ssssssssddddi",
+            $employee_id,
+            $first_name,
+            $middle_name,
+            $last_name,
+            $email,
+            $hashedPassword,
+            $role,
+            $profile_image,
+            $vacation,
+            $sick,
+            $comp,
+            $emergency,
+            $id
+        );
     } else {
+        //WITHOUT LEAVE REQUESTS
+        /*
         $stmt = $conn->prepare("
             UPDATE users 
             SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, role=?, profile_image=?
             WHERE id=?
         ");
         $stmt->bind_param("sssssssi", $employee_id, $first_name, $middle_name, $last_name, $email, $role, $profile_image, $id);
+        */
+
+        //WITH LEAVE REQUESTS
+        $stmt = $conn->prepare("
+        UPDATE users 
+        SET employee_id=?, first_name=?, middle_name=?, last_name=?, email=?, role=?, profile_image=?,
+        vacation_leave=?, sick_leave=?, compassionate_leave=?, emergency_leave=? 
+        WHERE id=?
+        ");
+        $stmt->bind_param(
+            "sssssssddddi",
+            $employee_id,
+            $first_name,
+            $middle_name,
+            $last_name,
+            $email,
+            $role,
+            $profile_image,
+            $vacation,
+            $sick,
+            $comp,
+            $emergency,
+            $id
+        );
     }
 
     if ($stmt->execute()) {

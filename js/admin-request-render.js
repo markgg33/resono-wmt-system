@@ -1,20 +1,17 @@
 // ================================
-// Format HH:MM:SS to 12-hour
+// Format HH:MM:SS to 24-hour HH:MM NEW TIME FORMAT FOR CONSISTENCY
 // ================================
-function formatTo12Hour(value) {
+function formatTo24Hour(value) {
   if (!value || value === "--") return value;
 
+  // Handle already clean times like "08:15"
   const parts = value.split(":");
-  if (parts.length < 2) return value; // not a time
+  if (parts.length < 2) return value;
 
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts[1];
-  const seconds = parts[2] ?? null;
+  const hours = parts[0].padStart(2, "0");
+  const minutes = parts[1].padStart(2, "0");
 
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-
-  return `${hours}:${minutes}${seconds ? ":" + seconds : ""} ${ampm}`;
+  return `${hours}:${minutes}`;
 }
 
 // ================================
@@ -90,8 +87,8 @@ function renderAdminRequestTable(requests) {
   }
 
   requests.forEach((req) => {
-    const oldVal = formatTo12Hour(req.old_value);
-    const newVal = formatTo12Hour(req.new_value);
+    const oldVal = formatTo24Hour(req.old_value);
+    const newVal = formatTo24Hour(req.new_value);
 
     const actionBtn =
       req.status === "Pending"
@@ -165,9 +162,9 @@ $(document).on("click", ".admin-edit-btn", function () {
 
       // Set old values (use the new explicit fields from backend)
       $("#adminEditOldStartTime").val(
-        formatTo12Hour(req.old_start_time) || "--"
+        formatTo24Hour(req.old_start_time) || "--"
       );
-      $("#adminEditOldEndTime").val(formatTo12Hour(req.old_end_time) || "--");
+      $("#adminEditOldEndTime").val(formatTo24Hour(req.old_end_time) || "--");
       $("#adminEditOldDate").val(req.old_date || "--");
 
       // Reset new inputs

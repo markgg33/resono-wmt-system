@@ -1,4 +1,8 @@
 <?php
+
+// ✅ Enforce server timezone globally
+date_default_timezone_set("Asia/Manila");
+
 // Database credentials
 $host = 'localhost';           // Usually 'localhost'
 $db   = 'rsn_wmt_db';  // Change this to your database name
@@ -16,4 +20,4 @@ if ($conn->connect_error) {
 // Optional: set charset
 $conn->set_charset("utf8mb4");
 
-date_default_timezone_set("Asia/Manila");
+$conn->query("SET time_zone = '+08:00';");

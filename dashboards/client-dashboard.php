@@ -1,4 +1,5 @@
 <?php
+require_once "../backend/session_config.php"; // Load lifetime settings first
 session_start();
 require_once "../backend/connection_db.php"; // Adjust path if needed
 
@@ -75,6 +76,7 @@ $loggedInUserRole = $_SESSION['role'];
         <!---SIDEBAR--->
         <aside id="rsn-sidebar">
             <div class="profile-container">
+                <div class="staging-badge">STAGING</div>
                 <br>
                 <?php
                 $profilePath = !empty($_SESSION['profile_image']) ? "../" . $_SESSION['profile_image'] : "";
@@ -101,7 +103,7 @@ $loggedInUserRole = $_SESSION['role'];
 
                     <ul class="collapse sidebar-submenu list-unstyled ps-3" id="statusSubmenu">
                         <li class="sidebar-list-item" data-page="data-visualization" onclick="changePage('data-visualization')">Data Visualization</li>
-                        <li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li>
+                        <!--li class="sidebar-list-item" data-page="status-dashboard" onclick="changePage('status-dashboard')">Status Dashboard</li-->
                     </ul>
                 </li>
 
@@ -122,17 +124,20 @@ $loggedInUserRole = $_SESSION['role'];
 
         <div class="rsn-main-container">
 
-            <!-- DASHBOARD PAGE -->
+            <!-- STATUS-DASHBOARD PAGE >
             <div id="status-dashboard-page" class="page-content container-fluid">
                 <div class="main-title mb-4 d-flex justify-content-between align-items-center">
                     <h1 class="fw-bold">STATUS DASHBOARD</h1>
 
-                    <!-- Department Filter -->
-                    <div>
-                        <select id="dashDepartmentFilter" class="form-select shadow-sm">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
+                    <//?php if (in_array($loggedInUserRole, ['admin', 'executive', 'hr', 'supervisor'])): ?>
+                        <//!-- Department Filter (admins, hr, executives, supervisors) >
+                        <div>
+                            <select id="dashDepartmentFilter" class="form-select shadow-sm">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                    <//?php endif; ?>
+
                 </div>
 
                 <div class="card shadow-sm rounded-3">
@@ -149,10 +154,11 @@ $loggedInUserRole = $_SESSION['role'];
                             </thead>
                             <tbody id="statusTable"></tbody>
                         </table>
-                        <div id="paginationControls" class="my-3 d-flex justify-content-center"></div>
+
                     </div>
+                    <div id="paginationControls" class="my-3 d-flex justify-content-center"></div>
                 </div>
-            </div>
+            </div-->
 
             <!-- Floating Online Users Widget -->
             <div id="onlineWidget" class="position-fixed bottom-0 end-0 m-3">
@@ -170,65 +176,143 @@ $loggedInUserRole = $_SESSION['role'];
                 </div>
             </div>
 
-            <!-- DATA VISUALIZATION PAGE -->
-            <div id="data-visualization-page" class="page-content container-fluid py-4">
-                <div class="main-title mb-4 text-center">
-                    <h1 class="fw-bold">DATA VISUALIZATION</h1>
-                </div>
-
-                <div class="row">
-                    <!-- Sidebar Controls -->
-                    <div class="col-md-3">
-                        <h5 class="fw-bold">Departments</h5>
-                        <div id="department-buttons" class="d-flex flex-column gap-2 mb-4"></div>
-
-                        <h5 class="fw-bold">Chart Type</h5>
-                        <button class="btn btn-dark mb-2 chart-toggle" data-type="bar">
-                            <i class="fas fa-chart-bar"></i> Production Hours
-                        </button>
-                        <button class="btn btn-dark mb-2 chart-toggle" data-type="pie">
-                            <i class="fas fa-chart-pie"></i> Task Distribution
-                        </button>
-                        <div id="month-filter" style="display:none;">
-                            <h5 class="fw-bold">Select Month</h5>
-                            <select id="monthSelector" class="form-select"></select>
-                        </div>
+            <?php if ($loggedInUserRole === 'client'): ?>
+                <!-- DATA VISUALIZATION PAGE -->
+                <div id="data-visualization-page" class="page-content container-fluid py-4">
+                    <div class="main-title mb-4 text-center">
+                        <h1 class="fw-bold">ANALYTICS</h1>
                     </div>
 
-                    <!-- Chart + Data -->
-                    <div class="col-md-9">
-                        <div id="date-range-filter">
-                            <h5 class="fw-bold">Select Date Range</h5>
-                            <div class="row mb-2">
-                                <div class="col">
+                    <div class="row align-items-start mb-4">
+
+                        <div class="card shadow-sm p-3 mb-4">
+                            <div class="row g-2 align-items-end">
+
+                                <div class="col-md-2">
+                                    <label class="fw-bold">Start Date</label>
                                     <input type="date" id="bar_Start_Date" class="form-control">
                                 </div>
-                                <div class="col">
+
+                                <div class="col-md-2">
+                                    <label class="fw-bold">End Date</label>
                                     <input type="date" id="bar_End_Date" class="form-control">
                                 </div>
-                                <div class="col">
-                                    <select id="barMode" class="form-select">
-                                        <option value="daily">Daily View</option>
-                                        <option value="monthly">Monthly View (FTE)</option>
+
+                                <div class="col-md-2">
+                                    <label class="fw-bold">Chart Type</label>
+                                    <select id="chartTypeDropdown" class="form-select">
+                                        <option value="">Select</option>
+                                        <option value="bar">Production Hours</option>
+                                        <option value="pie">Task Distribution</option>
+                                        <option value="aht">Average Handling Time (AHT)</option>
+                                        <!--option value="billing">Billing Category</option-->
                                     </select>
                                 </div>
-                                <div class="col">
-                                    <button class="btn btn-success w-100" id="applyDateRange">Apply</button>
+
+                                <div class="col-md-2">
+                                    <label id="departmentFilterLabel" class="fw-bold">
+                                        Departments
+                                    </label>
+                                    <div class="dropdown">
+                                        <button id="departmentDropdownLabel"
+                                            class="btn btn-outline-secondary dropdown-toggle w-100 text-truncate"
+                                            type="button"
+                                            data-bs-toggle="dropdown">
+                                            Select Departments
+                                        </button>
+
+                                        <ul class="dropdown-menu w-100" id="departmentDropdownMenu"
+                                            style="max-height: 250px; overflow-y: auto;">
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label id="billingFilterLabel" class="fw-bold">
+                                        Billing Category
+                                    </label>
+                                    <div class="dropdown">
+                                        <button id="billingDropdownLabel"
+                                            class="btn btn-outline-secondary dropdown-toggle w-100 text-truncate"
+                                            type="button"
+                                            data-bs-toggle="dropdown">
+                                            Select Billing Category
+                                        </button>
+
+                                        <ul class="dropdown-menu w-100" id="billingDropdownMenu"
+                                            style="max-height: 250px; overflow-y: auto;">
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- ✅ RESTORED VIEW FILTER -->
+                                <div class="col-md-2">
+                                    <label class="fw-bold">View</label>
+                                    <select id="barMode" class="form-select">
+                                        <option value="daily">Daily</option>
+                                        <option value="monthly">Monthly (FTE)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <button class="btn btn-success w-100" id="applyFilters">Apply</button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ===== Chart Type & Month Selector ===== -->
+                        <div class="row align-items-center mb-4">
+                            <div class="col-md-6" id="month-filter" style="display:none;">
+                                <h5 class="fw-bold mb-2">Select Month</h5>
+                                <select id="monthSelector" class="form-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- ===== Chart + Task List ===== -->
+                        <div class="row">
+                            <!-- Chart -->
+                            <div class="col-md-7 mb-4">
+                                <div class="card shadow p-3" style="height: 500px;">
+                                    <canvas id="visualizationChart"></canvas>
+                                    <div id="chartFallback"
+                                        class="text-center text-muted fst-italic"
+                                        style="display:none; padding:20px;">
+                                        No chart data available for this selection.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task List -->
+                            <div class="col-md-5 mb-4">
+                                <!--div id="taskList" class="card shadow p-3 h-100">
+                                    <h5 class="fw-bold text-center mb-3">Task List</h5>
+                                    <div id="taskListContent" class="d-flex flex-column gap-2"></div>
+                                </div-->
+                                <div class="card shadow p-3" style="height: 500px;">
+                                    <h5 class="fw-bold text-center mb-3">Details</h5>
+
+                                    <!-- Tabs -->
+                                    <ul class="nav nav-tabs mb-2">
+                                        <li class="nav-item">
+                                            <button id="fte-tab" class="nav-link active">Production</button>
+                                        </li>
+                                        <li class="nav-item">
+                                            <button id="billing-tab" class="nav-link">Billing</button>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Scrollable content wrapper -->
+                                    <div id="tabContentWrapper" style="overflow-y: auto; flex: 1;">
+                                        <div id="fteContent"></div>
+                                        <div id="billingContent" style="display:none;"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card shadow p-3 mb-4" style="height: 500px;">
-                            <canvas id="visualizationChart"></canvas>
-                            <div id="chartFallback" class="text-center text-muted fst-italic" style="display:none; padding:20px;">
-                                No chart data available for this selection.
-                            </div>
-                        </div>
-                        <div id="taskList" class="card shadow p-3"></div>
                     </div>
                 </div>
-            </div>
-
-
+            <?php endif; ?>
 
             <!---EDIT PROFILE USER--->
             <div id="edit-profile-page" class="page-content">
@@ -253,10 +337,10 @@ $loggedInUserRole = $_SESSION['role'];
                         <!-- Profile Info Tab -->
                         <div class="tab-pane fade show active" id="profileInfo" role="tabpanel">
                             <form id="updateProfileForm" class="modern-form" enctype="multipart/form-data">
-                                <div class="form-group">
+                                <!---div class="form-group">
                                     <label>Employee ID</label>
                                     <input type="text" id="edit_employee_id" class="form-control-modern">
-                                </div>
+                                </div--->
                                 <div class="form-group">
                                     <label>First Name</label>
                                     <input type="text" id="edit_first_name" class="form-control-modern" required>
@@ -277,10 +361,10 @@ $loggedInUserRole = $_SESSION['role'];
                                     <label>Role</label>
                                     <input type="text" id="edit_role" class="form-control-modern" disabled>
                                 </div>
-                                <div class="form-group">
+                                <!---div class="form-group">
                                     <label>Department</label>
                                     <select id="edit_department_select" class="form-control-modern"></select>
-                                </div>
+                                </div--->
 
                                 <!-- ✅ Profile Image (preview + upload) -->
                                 <div class="form-group">

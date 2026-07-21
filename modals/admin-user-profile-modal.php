@@ -54,6 +54,29 @@
                         <label class="form-label">Profile Image</label>
                         <input type="file" id="admin_edit_profile_image" class="form-control">
                     </div>
+
+                    <!---NEW INPUT FIELDS FOR LEAVE REQUEST--->
+
+                    <div class="col-md-6">
+                        <label for="vacationLeave" class="form-label">No. of Vacation leave <span style="color:red;">*</span></label>
+                        <input type="number" step="any" min="0" class="form-control" id="admin_edit_vacationLeave" name="vacationLeave" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="sickLeave" class="form-label">No. of Sick Leave <span style="color:red;">*</span></label>
+                        <input type="number" step="any" min="0"  class="form-control" id="admin_edit_sickLeave" name="sickLeave" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="compLeave" class="form-label">No. of Compensation Leave</label>
+                        <input type="number" step="any" min="0"  class="form-control" id="admin_edit_compLeave" name="compLeave">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="emergencyLeave" class="form-label">No. of Emergency Leave</label>
+                        <input type="number" step="any" min="0" class="form-control" id="admin_edit_emergencyLeave" name="emergencyLeave">
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Save Changes</button>

@@ -1,4 +1,4 @@
-<!-- User Amendment Modal -->
+<!-- User Amendment Modal>
 <div class="modal fade" id="userAmendmentModal" tabindex="-1" aria-labelledby="userAmendmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -10,18 +10,18 @@
                 <form id="amendmentForm">
                     <input type="hidden" id="logId" name="log_id">
 
-                    <!-- Hidden fields for backend -->
+                    <Hidden fields for backend>
                     <input type="hidden" id="oldDate" name="old_date">
                     <input type="hidden" id="oldStartTimeHidden" name="old_start_time">
                     <input type="hidden" id="oldEndTimeHidden" name="old_end_time">
 
-                    <!-- Always show original date -->
+                    <Always show original date>
                     <div class="mb-3">
                         <label>Original Date</label>
                         <input type="text" id="amendDate" class="form-control" readonly>
                     </div>
 
-                    <!-- Field to amend -->
+                    <Field to amend>
                     <div class="mb-3">
                         <label>Field to Amend</label>
                         <select id="field" name="field" class="form-select" required>
@@ -31,7 +31,7 @@
                         </select>
                     </div>
 
-                    <!-- Old Values -->
+                    <Old Values>
                     <div class="row mb-3">
                         <div class="col">
                             <label>Old Start Time</label>
@@ -43,7 +43,7 @@
                         </div>
                     </div>
 
-                    <!-- New Values -->
+                    <New Values>
                     <div id="newDateWrapper" class="mb-3 d-none">
                         <label>New Date</label>
                         <input type="date" id="newDate" name="new_date" class="form-control">
@@ -60,13 +60,13 @@
                         </div>
                     </div>
 
-                    <!-- Reason -->
+                    <Reason>
                     <div class="mb-3">
                         <label>Reason</label>
                         <textarea id="reason" name="reason" class="form-control" rows="3" required></textarea>
                     </div>
 
-                    <!-- Recipient -->
+                    <Recipient>
                     <div class="mb-3">
                         <label for="recipientSelect" class="form-label">Send To</label>
                         <select id="recipientSelect" name="recipient_id" class="form-select" required>
@@ -75,6 +75,71 @@
                     </div>
 
                     <button type="submit" class="btn btn-success">Submit Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div--->
+
+<!-- User Amendment Modal -->
+<div class="modal fade" id="userAmendmentModal" tabindex="-1" aria-labelledby="userAmendmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Request Amendment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="amendmentForm">
+                    <input type="hidden" id="logId" name="log_id">
+                    <input type="hidden" id="oldStartTimeHidden" name="old_start_time">
+                    <input type="hidden" id="oldEndTimeHidden" name="old_end_time">
+                    <input type="hidden" id="oldDateHidden" name="old_date">
+
+                    <!-- OLD VALUES -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>Old Date</label>
+                            <input type="text" id="oldDate" class="form-control" readonly>
+                        </div>
+                        <div class="col">
+                            <label>Old Start Time</label>
+                            <input type="text" id="oldStartTime" class="form-control" readonly>
+                        </div>
+                        <div class="col">
+                            <label>Old End Time</label>
+                            <input type="text" id="oldEndTime" class="form-control" readonly>
+                        </div>
+                    </div>
+
+                    <!-- NEW VALUES -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>New Date <small class="text-muted">(optional)</small></label>
+                            <input type="date" id="newDate" name="new_date" class="form-control">
+                        </div>
+                        <div class="col">
+                            <label>New Start Time <span class="text-danger">*</span></label>
+                            <input type="time" id="newStartTime" name="new_start_time" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- REASON -->
+                    <div class="mb-3">
+                        <label>Reason / Remarks</label>
+                        <textarea id="reason" name="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+
+                    <!-- RECIPIENT -->
+                    <div class="mb-3">
+                        <label for="recipientSelect">Send To</label>
+                        <select id="recipientSelect" name="recipient_id" class="form-select" required>
+                            <option value="">-- Select Recipient --</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">Submit Amendment</button>
                 </form>
             </div>
         </div>

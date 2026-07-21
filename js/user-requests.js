@@ -1,19 +1,19 @@
 //TIME FORMATTER FOR AMENDMENT PAGE
 function formatTo12Hour(value) {
-  if (!value || value === "--") return value;
+  if (!value || value === "--") return "--";
 
-  // Match HH:MM or HH:MM:SS
-  const timeParts = value.split(":");
-  if (timeParts.length < 2) return value; // not a time, just return raw
+  // Keep only HH:MM:SS
+  const parts = value.trim().split(":");
+  const h = parseInt(parts[0] || 0, 10);
+  const m = parseInt(parts[1] || 0, 10);
+  const s = parseInt(parts[2] || 0, 10);
 
-  let hours = parseInt(timeParts[0], 10);
-  let minutes = timeParts[1];
-  let seconds = timeParts.length === 3 ? timeParts[2] : null;
+  const displayMinutes = h === 0 && m === 0 && s > 0 ? 1 : m;
 
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hours12 = h % 12 || 12;
 
-  return `${hours}:${minutes}${seconds ? ":" + seconds : ""} ${ampm}`;
+  return `${hours12}:${String(displayMinutes).padStart(2, "0")} ${ampm}`;
 }
 
 // Load recipients into dropdown

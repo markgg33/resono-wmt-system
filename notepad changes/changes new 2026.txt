@@ -1,0 +1,556 @@
+03042026
+
+Notes: 
+
+Swapped 2 export files Activity Logs should display the list of tasks while individual logs displays per day 
+
+new consolidation modules added, backend and JS
+
+03102026
+
+admin-dashboard.php changes 
+
+new files in consolidations folder
+
+consolidation.js
+
+process_amendment.php
+
+
+03112026
+
+new billing_categories table
+
+CREATE TABLE billing_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE task_descriptions
+ADD COLUMN billing_category_id INT NULL AFTER work_mode_id;
+
+ALTER TABLE task_descriptions
+ADD CONSTRAINT fk_task_billing
+FOREIGN KEY (billing_category_id)
+REFERENCES billing_categories(id)
+ON DELETE SET NULL;
+
+create-work-mode.js changes
+add_task_description.php changes
+new get_billing_categories.php
+get_task_description.php
+update_task_description.php
+add_billing_category.php
+update_billing_category.php
+delete_billing_category.php
+
+03132026 
+
+export_department_csv.php
+export_mtd_csv.php
+
+03142026
+
+toggle_billing_category_status.php new 
+create-work-mode.js changes
+admin-dashboard.php changes
+export files (mtd and department csv)
+
+create_announcement.hp
+get_announcements.php
+create-announcement-modal.php
+
+03152026
+
+CREATE TABLE announcements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    image VARCHAR(255) NULL,
+    status ENUM('active','inactive') DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+get_all_announcements.php
+toggle_announcement.php
+delete_announcement.php
+create_announcemenet.php changes
+save_announcement.php
+get_single_announcement.php
+
+announcements.js
+
+admin-dashboard changes
+user-dashboard changes 
+
+03172026 (external commendation testing)
+
+ALTER TABLE commendations
+ADD sender_type ENUM('internal','external') DEFAULT 'internal',
+ADD external_email VARCHAR(150) NULL,
+ADD external_name VARCHAR(150) NULL;
+
+ALTER TABLE commendations 
+MODIFY from_user_id INT NULL;
+
+external folder one in backend one in root (BACKLOG CODE)
+
+external/index.html
+external.css
+external.js
+
+backend/external/submit_external_commendation.php
+verify_google_user.php
+get_commendations.php changes
+commendations-table.js changes 
+
+get_single_commendation.php changes
+
+add a employee filter dropdown function for the commendation page commendation-table.js
+
+get_unseen_received_commendations.php
+
+mark_commendation_seen.php
+
+get_received_commendations.php
+
+commendation-notif.js
+
+get_values.php added external access
+
+03192026
+
+added new call times for start-tag-task.js
+
+user and admin dashboards
+
+032022026
+
+create-work-mode.js refactoring
+
+03232026
+
+get_monthly_summary.php changes for midnight shift testing
+
+update_tag_task.php (minor changes) deployed both stg and prod
+
+follow up: adjustment of work mode order (should be drag and drop for easier access for users)
+
+export files 
+															
+start-tag-task removed btn-sm to edit button and amend
+
+create-work-mode.js removed delete button in work mode descriptions
+
+const deleteBtn = group.querySelector(".btn-outline-danger");
+
+deleteBtn.addEventListener("click", ...)
+
+<button class="btn btn-outline-danger d-none">Delete</button>
+
+
+03242026
+
+changes with the task_descriptions db
+
+ALTER TABLE task_descriptions ADD COLUMN display_order INT DEFAULT 0;
+
+
+03252026
+
+new JS plugin <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+ADDED NEW FUNCTIONS IN THE CREATE-WORK-MODE.JS
+
+NEW UPDATE_TASK_ORDER.PHP
+
+get_task_descriptions.php
+
+update_task_description.php
+
+03272026 
+
+submit_overtime_request.php changes
+
+update_task_log.php changes	
+
+start-tag-task.js
+
+noted: update is in STG task_log and JS
+
+0330-31-2026
+
+submit_overtime_request.php new changes
+update_ot_request.php new changes due to OT validation and exceeding OT filing
+
+03312026
+
+process_amendment.php changes
+
+04012026 (advise for deployment need confirmation)
+
+new backend file ot_validation_helper.php
+
+changes for the OT files:
+approve_ot
+submit_overtime_request
+update_ot
+
+04142026 CHANGES
+
+NEW FILES CANCEL DELETE LEAVE REQUEST PHPS
+leave_requests.js changes 
+approve_leave_request.php changes
+
+
+04152026
+
+get_single_leave_request.php changes
+
+leave_request.js new changes
+
+admin dashboard changes (leave request filter selection)
+
+view modal leave changes
+
+04162026
+
+LEAVE_request.js changes
+get_leave_request.php changes
+get_single_leave_request.php
+view_leave_request_modal.php
+
+04172026
+
+scheduler.js added colorClass
+global.css added the CSS for RHL
+get_monthly_summary.php changes
+
+NEW CHANGES TODAY FOR TOIL
+leave-requests.js
+create_leave_request.php
+approve_leave_request.php
+get_single_leave_request.php
+get_leave_requests.php
+
+04202026
+
+updated:
+
+leave_requests.js
+create_leave_requests.php
+get_leave_requests.php
+get_single_leave_request.php
+
+
+NOTE: CHANGE NUMBER FOR TESTING are create_leave, update_leave,leave_requests.js line 413, 433
+
+added TOIL inside DB
+
+04212026
+
+added TOIL scheduler
+get_approved_leave_days.php
+scheduler.js only added scheduler-toil
+global.css
+	
+data visualization.js
+
+
+04232026
+
+run ALTER TABLE task_descriptions ADD COLUMN display_order INT DEFAULT 0;
+added update_task_order.php 
+uploaded updated get_task_descriptions.php
+
+04242026
+new fetch_billing_graph.php
+data-visualization.js changes
+admin-dashboard.php added billing as an option
+
+
+
+04272026
+sidebar.js 
+data-visualization.js changes
+start-tag-task.js uploaded working version
+get_billing_by_department.php new file
+admin-dashboard data visualization section
+global css
+
+
+04302026
+ADDED CREDENTIALS SAME ORIGIN IN FETCH CALLS OF START-TAG-TASK.JS
+
+ADDING DEBUG CODE IN FETCH PHP error_log("SESSION USER (insert): " . ($_SESSION['user_id'] ?? 'NULL'));
+
+05072026
+
+TASKS:
+ADD ALL DEPARTMENTS TO THE DROPDOWN, WHEN ALL DEPARTMENT IS SELECTED, FETCH ALL APPLICABLE BILLING CATEGORY FOR THE DROPDOWN FOR SELECTION (DONE)
+INDIVIDUAL CONSOLIDATION VALUE FILTER EMPLOYEE LEVEL (DONE)
+ADD FTE TO BILLING CATEGORY (DONE)
+
+
+data-visualization changes
+
+add-user-modal changed departmentdropdown to adduserdepartmentdropdown and the const parts
+toggle-department.js
+admin-dashboard changes
+
+
+05082026
+
+get_billing_by_department.php
+fetch_bar_graph.php
+data-visualization.js
+
+05092026
+
+ADMIN-DASHBOARD.PHP
+consolidation.js
+get_individual_value_con.php
+
+
+05112026
+fetch_billing_graph.php
+data-visualization.js changes
+admin-dashboard.php additionals
+
+updates are now in STG
+
+Possible migration of alerts to sweet alert
+
+start-tag-task.js
+alertService.js
+
+05132026
+
+fetch_billing_graph.php changes
+
+
+05162026 (FOR DATA VISUALIZATION)
+
+admin-dashboard.php
+data-visualization.js
+get_billing_by_department.php
+fetch_bar_graph.php
+fetch_billing_graph.php
+
+05182026 (FOR TASK INSERTION)
+
+task-insertion.js
+insert_task_request.php
+update_task_insertion_status.php (Adjusted again)
+
+from cursor (update test)
+get_earliest_start_time.php
+insert_task_request.php
+update_task_insertion_status.php
+
+for new logic of VL display
+
+admin-dashboard added leave hours
+user-dashboard
+get_monthly_summary.php changed
+load-monthly-summary.js changed
+
+05192026
+
+approve_leave_request.php
+
+05252026
+
+(NEW FOR LEAVE)
+export_tracker_summary_xlsx.php (test)
+export_department_tracker_summary_xlsx.php
+load-monthly-summary.js
+get_monthly_summary.php
+
+05282026
+
+update_task_insertion_status.php (check changes)
+
+05292026 (tracker summary and leave logic)
+
+get_monthly_summary.php
+load-monthly-summary.js
+approve ot request.php
+ot_validation_helpers.php
+update ot request.php
+export_tracker_summary_xlsx.php
+
+06022026
+
+both export files are updated to remove the actual paid hours value default
+
+06032026
+
+export_mtd_csv.php
+export_department_csv.php
+update_task_log.php
+new unified tagging backend (switch_task.php) staging
+new start-tag-task.js changes in staging
+
+06042026
+
+06092026
+
+external/index.html
+external.css
+external.js
+commendations-table for admin
+
+06092026
+
+External commendations changes
+get-commendations.php
+
+
+
+06102026
+
+external commendation frontend changes
+
+06112026
+
+external css js 
+index.html
+
+
+06162026 (HUDDLE NOTES)
+
+ADD NEW REPORT AHT (AVERAGE HANDLING TIME) to analytics under chart type 
+
+DROPDOWNS WILL BE CONVERTED WORK MODE (SINGLE SELECT) AND TAG (CHECKBOX) 
+
+ADD LABEL FOR THE BILLING CATEGORY
+
+ADJUST UI CHART TYPE > DEPARTMENTS > BILLING CATEGORY
+
+COMPUTATION FOR AHT SUM OF TOTAL HRS OF WORK MODE * 60 = CONVERTED TO MINUTES
+
+SUM OF TOTAL VOLUME OF WORK MODE = TOTAL VOLUME
+
+AHT = CONVERTED MINUTES / TOTAL VOLUME 
+
+SAME CHART - TASK - TOTAL MINUTES - TOTAL VOLUME = AHT
+
+External changes index/css/js 
+
+
+06172026
+
+(Amendment update)
+process_amendment.php
+submit_amendment.php 
+
+//FOR TESTING (OT revision)
+ot_validation_helpers.php 
+submit ot php (added flag and new logic)
+uupdate ot request
+approve ot request
+
+admin-dashboard
+fetch_aht_graph.php (new file)
+data-visualization.js (Changes)
+
+change pass for prod Reson0!2027
+
+06182026 (MEETING)
+
+WORKMODE
+
+ADD STANDARD AHT (TASK DESCRIPTION CONTAINER)
+
+BILLING CATEGORY = ADD TASK = AHT 
+
+GRAPH FOR AHT TO BE TABLE
+
+(HEADERS)
+
+MAYBE TITLE HERE: AVERAGE HANDLING TIME
+
+TASK DESC TOTAL MINUTES TOTAL VOLUME STANDARD AHT ACTUAL AHT
+
+revised data-visualization.js (renamed functions to avoid conflicts)
+
+//for work mode AHT
+
+create-work-mode.js changes
+admin-dashboard.php
+
+altered table SQL
+
+ALTER TABLE task_descriptions
+ADD COLUMN standard_aht DECIMAL(10,2) DEFAULT NULL
+AFTER description;
+
+ADD_TASK_DESCRIPTION.PHP
+update_task_description.php
+get_task_descriptions.php
+fetch_aht_graph.php
+
+06222026
+
+get_task_descriptions.php (removed comma)
+data-visualization.js (added code to hide aht graph based on selections)
+align landing page for the external commendations
+
+06252026
+external.js changes
+new files (thank-you js php css)
+
+07012026
+
+admin-dashboard.php changes in Analytics page
+data-visualization.js
+fetch_aht_graph.php	
+get_analytics_employees.php
+
+07022026
+
+create-commendation.php changes (allowed self deduction)
+
+07052026
+
+admin dashboard changes
+
+global.css changes
+
+data-visualization.js changes	
+
+fetch_aht_graph.php
+
+07062026
+
+export_mtd_csv.php changes
+export_department_csv.php changes
+
+07072026
+
+(Deploy to staging later for checking)
+get_scheduler_matrix.php full change
+scheduler.js added case for absent
+get_monthly_summary.php changes
+export_tracker_summary.php (removed comments)
+export_department_tracker_summary.php changes
+
+07082026
+
+TASK/S: implement individual production hours and task distribution like AHT
+
+files involve: fetch_bar_graph.php, data-visualization.js, possibly new structure for analytics page due to table is needed
+
+07092026
+
+get_montly_summary.php
+get_scheduler_matrix.php
+export_tracker_summary_xlsx.php
+export_department_tracker_summary_xlsx.php	
+
+07102026
+
+data-visualization.js

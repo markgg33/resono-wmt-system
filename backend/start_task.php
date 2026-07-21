@@ -2,6 +2,7 @@
 session_start();
 require 'connection_db.php';
 header('Content-Type: application/json');
+date_default_timezone_set("Asia/Manila");
 
 // Validate inputs
 $user_id = $_SESSION['user_id'] ?? null;

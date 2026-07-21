@@ -25,6 +25,7 @@
 
 <body>
 
+
     <div class="container d-flex justify-content-center align-items-center vh-100">
         <div class="card p-4 shadow" data-aos="fade-up">
             <div class="image-center">
@@ -65,11 +66,13 @@
                 <button type="submit" class="btn-login w-100">Login</button>
             </form>
 
-            <a href="#" class="forgot-password-link mt-3 text-center">Forgot Password?</a>
+            <!---a href="#" class="forgot-password-link mt-3 text-center">Forgot Password?</a--->
 
             <div id="loginError" class="text-danger text-center mt-2" style="display: none;"></div>
         </div>
     </div>
+
+
 
     <!---JS LINKS HERE--->
     <script src="js/js-session/login.js"></script>
