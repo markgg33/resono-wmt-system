@@ -1,4 +1,4 @@
-<!-- Edit Amendment Modal -->
+<!-- Edit Amendment Modal>
 <div class="modal fade" id="adminEditAmendmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -10,13 +10,13 @@
                 <form id="adminEditAmendmentForm">
                     <input type="hidden" id="adminEditRequestId" name="id">
 
-                    <!-- Original Date -->
+                    <Original Date>
                     <div class="mb-3">
                         <label class="form-label">Original Date</label>
                         <input type="text" id="adminEditDate" class="form-control" readonly>
                     </div>
 
-                    <!-- Field to Amend -->
+                    <Field to Amend>
                     <div class="mb-3">
                         <label class="form-label">Field to Amend</label>
                         <select id="adminEditField" name="field" class="form-select" required>
@@ -26,7 +26,7 @@
                         </select>
                     </div>
 
-                    <!-- Old Values -->
+                    <Old Values>
                     <div class="row mb-3">
                         <div class="col">
                             <label class="form-label">Old Start Time</label>
@@ -38,19 +38,19 @@
                         </div>
                     </div>
 
-                    <!-- Old Date -->
+                    <Old Date>
                     <div class="mb-3">
                         <label class="form-label">Old Date</label>
                         <input type="text" id="adminEditOldDate" class="form-control" readonly>
                     </div>
 
-                    <!-- Wrapper for date amendment -->
+                    <Wrapper for date amendment>
                     <div class="mb-3 d-none" id="adminEditDateWrapper">
                         <label class="form-label">New Date</label>
                         <input type="date" id="adminEditNewDate" name="new_date" class="form-control">
                     </div>
 
-                    <!-- New Times -->
+                    <New Times>
                     <div class="row mb-3">
                         <div class="col">
                             <label class="form-label">New Start Time</label>
@@ -62,13 +62,13 @@
                         </div>
                     </div>
 
-                    <!-- Reason -->
+                    <Reason>
                     <div class="mb-3">
                         <label class="form-label">Reason</label>
                         <textarea id="adminEditReason" name="reason" class="form-control" rows="3" required></textarea>
                     </div>
 
-                    <!-- Recipient -->
+                    <Recipient>
                     <div class="mb-3">
                         <label class="form-label">Recipient</label>
                         <select id="adminEditRecipientSelect" name="recipient_id" class="form-select" required>
@@ -77,6 +77,71 @@
                     </div>
 
                     <button type="submit" class="btn btn-success">Update Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div--->
+
+<!-- Admin Edit Amendment Modal -->
+<div class="modal fade" id="adminEditAmendmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Edit Amendment Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="adminEditAmendmentForm">
+                    <input type="hidden" id="adminEditRequestId" name="id">
+                    <input type="hidden" id="adminEditOldStartTimeHidden" name="old_start_time">
+                    <input type="hidden" id="adminEditOldEndTimeHidden" name="old_end_time">
+                    <input type="hidden" id="adminEditOldDateHidden" name="old_date">
+
+                    <!-- OLD VALUES -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>Old Date</label>
+                            <input type="text" id="adminEditOldDate" class="form-control" readonly>
+                        </div>
+                        <div class="col">
+                            <label>Old Start Time</label>
+                            <input type="text" id="adminEditOldStartTime" class="form-control" readonly>
+                        </div>
+                        <div class="col">
+                            <label>Old End Time</label>
+                            <input type="text" id="adminEditOldEndTime" class="form-control" readonly>
+                        </div>
+                    </div>
+
+                    <!-- NEW VALUES -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>New Date <small class="text-muted">(optional)</small></label>
+                            <input type="date" id="adminEditNewDate" name="new_date" class="form-control">
+                        </div>
+                        <div class="col">
+                            <label>New Start Time <span class="text-danger">*</span></label>
+                            <input type="time" id="adminEditNewStartTime" name="new_start_time" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- REASON -->
+                    <div class="mb-3">
+                        <label>Reason / Remarks</label>
+                        <textarea id="adminEditReason" name="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+
+                    <!-- RECIPIENT -->
+                    <div class="mb-3">
+                        <label>Send To</label>
+                        <select id="adminEditRecipientSelect" name="recipient_id" class="form-select" required>
+                            <option value="">-- Select Recipient --</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">Update Request</button>
                 </form>
             </div>
         </div>

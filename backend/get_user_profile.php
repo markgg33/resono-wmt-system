@@ -10,6 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_GET['id'] ?? $_SESSION['user_id'];
 
+//WORKING VERSION WITHOUT LEAVE
+/*
 $sql = "SELECT 
             u.id,
             u.employee_id, 
@@ -26,6 +28,30 @@ $sql = "SELECT
         LEFT JOIN user_departments ud ON u.id = ud.user_id
         LEFT JOIN departments d ON ud.department_id = d.id
         WHERE u.id = ?";
+        */
+        
+        //WITH LEAVE
+$sql = "SELECT 
+            u.id,
+            u.employee_id, 
+            u.first_name, 
+            u.middle_name, 
+            u.last_name, 
+            u.email, 
+            u.role, 
+            u.profile_image,
+            u.vacation_leave,
+            u.sick_leave,
+            u.compassionate_leave,
+            u.emergency_leave,
+            d.id AS department_id,
+            d.name AS department_name,
+            ud.is_primary
+        FROM users u
+        LEFT JOIN user_departments ud ON u.id = ud.user_id
+        LEFT JOIN departments d ON ud.department_id = d.id
+        WHERE u.id = ?";
+
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
@@ -36,6 +62,8 @@ $user = null;
 $departments = [];
 while ($row = $result->fetch_assoc()) {
     if (!$user) {
+        //WORKING VERSION WITHOUT LEAVE
+        /*
         $user = [
             "id" => $row["id"],
             "employee_id" => $row["employee_id"],
@@ -45,6 +73,23 @@ while ($row = $result->fetch_assoc()) {
             "email" => $row["email"],
             "role" => $row["role"],
             "profile_image" => $row["profile_image"] ?: "/assets/default-avatar.jpg"
+        ];
+        */
+
+        //WITH LEAVE
+        $user = [
+            "id" => $row["id"],
+            "employee_id" => $row["employee_id"],
+            "first_name" => $row["first_name"],
+            "middle_name" => $row["middle_name"],
+            "last_name" => $row["last_name"],
+            "email" => $row["email"],
+            "role" => $row["role"],
+            "profile_image" => $row["profile_image"] ?: "/assets/default-avatar.jpg",
+            "vacationLeave" => (float)$row["vacation_leave"],
+            "sickLeave" => (float)$row["sick_leave"],
+            "compLeave" => (float)$row["compassionate_leave"],
+            "emergencyLeave" => (float)$row["emergency_leave"]
         ];
     }
     if ($row["department_id"]) {

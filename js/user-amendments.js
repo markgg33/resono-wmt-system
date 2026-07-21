@@ -1,12 +1,52 @@
 $(document).ready(function () {
+  //TIME HELPER NEW FOR SECONDS REMOVAL
+  function formatToHHMM(timeStr) {
+    if (!timeStr) return "--";
+    timeStr = timeStr.toString().trim();
+
+    // Convert AM/PM to 24-hour if necessary
+    const ampmMatch = timeStr.match(
+      /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i
+    );
+    if (ampmMatch) {
+      let [_, h, m, , ampm] = ampmMatch;
+      h = parseInt(h, 10);
+      if (ampm.toUpperCase() === "PM" && h < 12) h += 12;
+      if (ampm.toUpperCase() === "AM" && h === 12) h = 0;
+      return `${String(h).padStart(2, "0")}:${m}`;
+    }
+
+    // Handle HH:MM:SS or HH:MM
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+    }
+
+    return timeStr;
+  }
+
   // Open modal
   $(document).on("click", ".request-amendment-btn", function () {
     $("#logId").val($(this).data("id"));
     $("#amendDate").val($(this).data("date"));
 
+    // Format old start/end times to 24-hour no seconds
+    // Read directly from the DOM attributes instead of jQuery's cached data
+    const oldStartRaw = $(this).attr("data-old-start");
+    const oldEndRaw = $(this).attr("data-old-end");
+
+    const oldStart = formatToHHMM(oldStartRaw);
+    const oldEnd = formatToHHMM(oldEndRaw);
+
+    $("#oldStartTime").val(oldStart);
+    $("#oldEndTime").val(oldEnd);
+
+    // Also set hidden fields for backend (unchanged raw values)
+    $("#oldStartTimeHidden").val($(this).data("old-start"));
+    $("#oldEndTimeHidden").val($(this).data("old-end"));
+
     // Default field = start_time
     $("#field").val("start_time").trigger("change");
-    $("#oldValue").val($(this).data("old-start"));
 
     $("#userAmendmentModal").modal("show");
   });

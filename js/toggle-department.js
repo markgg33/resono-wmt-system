@@ -39,7 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("role")
   ) {
     const departmentField = document.getElementById("departmentField");
-    const departmentDropdown = document.getElementById("departmentDropdown");
+    //changed to addUserDepartmentDropdown to avoid conflict
+    const departmentDropdown = document.getElementById("addUserDepartmentDropdown");
     const hiddenInput = document.getElementById("department_ids");
     const roleSelect = document.getElementById("role");
     const dropdownBtn = departmentField.querySelector(".dropdown-toggle");

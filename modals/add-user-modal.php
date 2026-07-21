@@ -69,7 +69,7 @@
                                 <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Select Departments
                                 </button>
-                                <ul class="dropdown-menu w-100 p-2" id="departmentDropdown" style="max-height: 200px; overflow-y: auto;">
+                                <ul class="dropdown-menu w-100 p-2" id="addUserDepartmentDropdown" style="max-height: 200px; overflow-y: auto;">
                                     <!-- checkboxes + radio buttons populated dynamically -->
                                 </ul>
                             </div>
@@ -78,6 +78,27 @@
                             <input type="hidden" id="primary_department" name="primary_department">
                         </div>
 
+                        <!---NEW INPUT FIELDS FOR LEAVE REQUEST--->
+
+                        <div class="col-md-4 mt-3">
+                            <label for="vacationLeave" class="form-label">No. of Vacation leave <span style="color:red;">*</span></label>
+                            <input type="number" class="form-control" id="vacationLeave" name="vacationLeave" required>
+                        </div>
+
+                        <div class="col-md-4 mt-3">
+                            <label for="sickLeave" class="form-label">No. of Sick Leave <span style="color:red;">*</span></label>
+                            <input type="number" class="form-control" id="sickLeave" name="sickLeave" required>
+                        </div>
+
+                        <div class="col-md-4 mt-3">
+                            <label for="compLeave" class="form-label">No. of Compensation Leave</label>
+                            <input type="number" class="form-control" id="compLeave" name="compLeave">
+                        </div>
+
+                        <div class="col-md-4 mt-3">
+                            <label for="emergencyLeave" class="form-label">No. of Emergency Leave</label>
+                            <input type="number" class="form-control" id="emergencyLeave" name="emergencyLeave">
+                        </div>
 
                     </div>
 
@@ -92,12 +113,29 @@
 </div>
 
 <script>
+    const roleSelect = document.getElementById("role");
+    const departmentField = document.getElementById("departmentField");
+
+    // Show/hide department dropdown dynamically
+    roleSelect.addEventListener("change", function() {
+        const role = this.value;
+        const rolesRequiringDepartment = ["user", "supervisor", "client"];
+
+        if (rolesRequiringDepartment.includes(role)) {
+            departmentField.style.display = "block";
+        } else {
+            departmentField.style.display = "none";
+        }
+    });
+
     document.getElementById("addUserForm").addEventListener("submit", async function(e) {
         e.preventDefault(); // prevent default form submission
 
-        // 🔹 Collect departments
-        const checkboxes = document.querySelectorAll("#departmentDropdown input[type=checkbox]:checked");
-        const primaryRadio = document.querySelector("#departmentDropdown input[type=radio]:checked");
+        const role = document.getElementById("role").value;
+
+        // Collect departments if visible
+        const checkboxes = document.querySelectorAll("#addUserDepartmentDropdown input[type=checkbox]:checked");
+        const primaryRadio = document.querySelector("#addUserDepartmentDropdown input[type=radio]:checked");
 
         const departments = [];
         checkboxes.forEach(cb => {
@@ -107,8 +145,11 @@
             });
         });
 
-        if (departments.length === 0) {
-            return alert("Please select at least one department.");
+        // Require department only for specific roles
+        const rolesRequiringDepartment = ["user", "supervisor", "client"];
+
+        if (rolesRequiringDepartment.includes(role) && departments.length === 0) {
+            return alert("Please select at least one department for this role.");
         }
 
         if (!confirm("Register the account?")) return;
@@ -129,14 +170,12 @@
 
             if (data.success) {
                 alert(data.message || "User added successfully.");
-                // Reset form
                 form.reset();
-                // Close modal
+                departmentField.style.display = "none"; // Hide again
                 const modalEl = document.getElementById("addUserModal");
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 modal.hide();
-                // Optionally refresh page or table
-                location.reload(); // refresh page
+                location.reload();
             } else {
                 alert(data.message || "Something went wrong.");
             }

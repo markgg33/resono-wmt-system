@@ -161,6 +161,8 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  //WORKING VERSION (CURRENT WITHOUT LEAVE)
+  /*
   function openEditModal(userId) {
     fetch(`../backend/get_user_profile.php?id=${userId}`)
       .then((res) => res.json())
@@ -291,7 +293,165 @@ document.addEventListener("DOMContentLoaded", function () {
         modal.show();
       });
   }
+  */
 
+  //TESTING VERSION WITH LEAVE (OPENING EDIT MODAL)
+  function openEditModal(userId) {
+    fetch(`../backend/get_user_profile.php?id=${userId}`)
+      .then((res) => res.json())
+      .then((user) => {
+        document.getElementById("admin_edit_user_id").value = userId;
+        document.getElementById("admin_edit_first_name").value =
+          user.first_name || "";
+        document.getElementById("admin_edit_middle_name").value =
+          user.middle_name || "";
+        document.getElementById("admin_edit_last_name").value =
+          user.last_name || "";
+        document.getElementById("admin_edit_employee_id").value =
+          user.employee_id || "";
+        document.getElementById("admin_edit_email").value = user.email || "";
+        document.getElementById("admin_edit_role").value = user.role || "";
+
+        // Current profile image
+        document.getElementById("admin_edit_current_photo").value =
+          user.profile_image || "";
+
+        // ============================
+        // ⭐ LOAD EXISTING LEAVE BALANCES ⭐
+        // ============================
+        document.getElementById("admin_edit_vacationLeave").value = parseFloat(
+          user.vacationLeave || 0
+        ).toFixed(2);
+
+        document.getElementById("admin_edit_sickLeave").value = parseFloat(
+          user.sickLeave || 0
+        ).toFixed(2);
+
+        document.getElementById("admin_edit_compLeave").value = parseFloat(
+          user.compLeave || 0
+        ).toFixed(2);
+
+        document.getElementById("admin_edit_emergencyLeave").value = parseFloat(
+          user.emergencyLeave || 0
+        ).toFixed(2);
+
+        // ============================
+        //    MULTI-DEPARTMENT LOGIC
+        // ============================
+
+        const departmentField = document.getElementById(
+          "adminEditDepartmentField"
+        );
+        const departmentDropdown = document.getElementById(
+          "adminEditDepartmentDropdown"
+        );
+        const hiddenInput = document.getElementById("admin_edit_departments");
+        const dropdownBtn = departmentField.querySelector(".dropdown-toggle");
+
+        departmentDropdown.innerHTML = "";
+        hiddenInput.value = "";
+
+        fetch("../backend/get_departments.php")
+          .then((res) => res.json())
+          .then((departments) => {
+            departmentDropdown.innerHTML = departments
+              .map(
+                (d) => `
+          <li class="d-flex align-items-center px-2">
+            <label class="dropdown-item flex-grow-1 mb-0 px-2">
+              <input type="checkbox" value="${d.id}" data-name="${d.name}" class="dept-checkbox me-2"> ${d.name}
+            </label>
+            <input type="radio" name="editPrimaryDept" value="${d.id}" class="dept-primary ms-4" title="Set Primary">
+          </li>`
+              )
+              .join("");
+
+            const userDeptIds = (user.departments || []).map((d) =>
+              String(d.id)
+            );
+            const primaryDeptId = (user.departments || []).find(
+              (d) => d.is_primary
+            )?.id;
+
+            departmentDropdown
+              .querySelectorAll(".dept-checkbox")
+              .forEach((checkbox) => {
+                if (userDeptIds.includes(checkbox.value)) {
+                  checkbox.checked = true;
+                }
+                checkbox.addEventListener("change", () => {
+                  const radio = departmentDropdown.querySelector(
+                    `.dept-primary[value="${checkbox.value}"]`
+                  );
+                  if (!checkbox.checked && radio.checked) {
+                    radio.checked = false;
+                  }
+                  updateSelected();
+                });
+              });
+
+            departmentDropdown
+              .querySelectorAll(".dept-primary")
+              .forEach((radio) => {
+                if (String(radio.value) === String(primaryDeptId)) {
+                  radio.checked = true;
+                }
+                radio.addEventListener("change", () => {
+                  const checkbox = departmentDropdown.querySelector(
+                    `.dept-checkbox[value="${radio.value}"]`
+                  );
+                  if (!checkbox.checked) checkbox.checked = true;
+                  updateSelected();
+                });
+              });
+
+            updateSelected();
+          });
+
+        function updateSelected() {
+          const selectedCheckboxes = Array.from(
+            departmentDropdown.querySelectorAll(".dept-checkbox:checked")
+          );
+
+          let selected = selectedCheckboxes.map((c) => {
+            const deptId = c.value;
+            const primaryRadio = departmentDropdown.querySelector(
+              `.dept-primary[value="${deptId}"]`
+            );
+            return {
+              id: deptId,
+              primary: primaryRadio?.checked || false,
+            };
+          });
+
+          hiddenInput.value = JSON.stringify(selected);
+
+          const selectedNames = selectedCheckboxes.map((c) => {
+            const deptId = c.value;
+            const isPrimary = departmentDropdown.querySelector(
+              `.dept-primary[value="${deptId}"]`
+            ).checked;
+            return c.dataset.name + (isPrimary ? " ⭐" : "");
+          });
+
+          if (selectedNames.length === 0) {
+            dropdownBtn.innerHTML = "Select Departments";
+          } else {
+            dropdownBtn.innerHTML = selectedNames
+              .map((n) => `<span class="dept-badge">${n}</span>`)
+              .join(" ");
+          }
+        }
+
+        let modal = new bootstrap.Modal(
+          document.getElementById("editUserModal")
+        );
+        modal.show();
+      });
+  }
+
+  //WORKING VERSION
+  /*
   document
     .getElementById("adminEditUserForm")
     .addEventListener("submit", function (e) {
@@ -361,6 +521,128 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => {
           if (data.success) {
             // Parse new primary from hidden input after update
+            const newDepartments = JSON.parse(
+              document.getElementById("admin_edit_departments").value || "[]"
+            );
+            const newPrimary = (newDepartments.find((d) => d.primary) || {}).id;
+            const newPrimaryName = newPrimary
+              ? document.querySelector(`.dept-checkbox[value="${newPrimary}"]`)
+                  ?.dataset.name
+              : null;
+
+            let message = data.message || "User updated successfully.";
+            if (
+              oldPrimaryName &&
+              newPrimaryName &&
+              oldPrimaryName !== newPrimaryName
+            ) {
+              message += ` Changed primary department from ${oldPrimaryName} to ${newPrimaryName}.`;
+            }
+
+            alert(message);
+            loadUsers();
+            bootstrap.Modal.getInstance(
+              document.getElementById("editUserModal")
+            ).hide();
+          } else {
+            alert("Error: " + (data.message || "Update failed."));
+          }
+        })
+        .catch((err) => {
+          console.error("Update failed:", err);
+          alert("Unexpected error occurred.");
+        });
+    });
+    */
+
+  //TESTING VERSION WITH LEAVE SAVING
+  document
+    .getElementById("adminEditUserForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const oldDepartments = JSON.parse(
+        document.getElementById("admin_edit_departments").value || "[]"
+      );
+      const oldPrimary = (oldDepartments.find((d) => d.primary) || {}).id;
+      const oldPrimaryName = oldPrimary
+        ? document.querySelector(`.dept-checkbox[value="${oldPrimary}"]`)
+            ?.dataset.name
+        : null;
+
+      let formData = new FormData();
+      formData.append(
+        "id",
+        document.getElementById("admin_edit_user_id").value
+      );
+      formData.append(
+        "first_name",
+        document.getElementById("admin_edit_first_name").value
+      );
+      formData.append(
+        "middle_name",
+        document.getElementById("admin_edit_middle_name").value
+      );
+      formData.append(
+        "last_name",
+        document.getElementById("admin_edit_last_name").value
+      );
+      formData.append(
+        "employee_id",
+        document.getElementById("admin_edit_employee_id").value
+      );
+      formData.append(
+        "email",
+        document.getElementById("admin_edit_email").value
+      );
+      formData.append("role", document.getElementById("admin_edit_role").value);
+
+      // departments
+      formData.append(
+        "departments",
+        document.getElementById("admin_edit_departments").value
+      );
+
+      // === PROFILE IMAGE ===
+      let fileInput = document.getElementById("admin_edit_profile_image");
+      let currentPhoto = document.getElementById(
+        "admin_edit_current_photo"
+      ).value;
+
+      if (fileInput.files.length > 0) {
+        formData.append("profile_image", fileInput.files[0]);
+      } else {
+        formData.append("keep_existing_image", currentPhoto);
+      }
+
+      // === NEW LEAVE FIELDS (DECIMAL) ===
+      formData.append(
+        "vacationLeave",
+        parseFloat(document.getElementById("admin_edit_vacationLeave").value) ||
+          0
+      );
+      formData.append(
+        "sickLeave",
+        parseFloat(document.getElementById("admin_edit_sickLeave").value) || 0
+      );
+      formData.append(
+        "compLeave",
+        parseFloat(document.getElementById("admin_edit_compLeave").value) || 0
+      );
+      formData.append(
+        "emergencyLeave",
+        parseFloat(
+          document.getElementById("admin_edit_emergencyLeave").value
+        ) || 0
+      );
+
+      fetch("../backend/update_user_admin.php", {
+        method: "POST",
+        body: formData,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
             const newDepartments = JSON.parse(
               document.getElementById("admin_edit_departments").value || "[]"
             );

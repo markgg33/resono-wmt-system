@@ -103,8 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${formatDateDisplay(log.date)}</td>
       <td>${log.work_mode}</td>
       <td>${log.task_description}</td>
-      <td>${ensureHHMMSS(log.start_time)}</td>
-      <td>${log.end_time ? ensureHHMMSS(log.end_time) : "--"}</td>
+      <td>${ensureHHMM(log.start_time)}</td>
+      <td>${log.end_time ? ensureHHMM(log.end_time) : "--"}</td>
       <td>${log.computed_duration || "--"}</td>
       <td>${log.remarks ? escapeHtml(log.remarks) : ""}</td>
       <td>${log.volume_remark ? escapeHtml(log.volume_remark) : ""}</td>
@@ -113,14 +113,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Helpers (mirror your tracker helpers)
-      function ensureHHMMSS(val) {
+      // Helpers (mirror your tracker helpers) NEW TIME HELPER REMOVED SECONDS
+
+      function ensureHHMM(val) {
         if (!val) return "--";
         const parts = val.split(":");
-        if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
-        return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:${(
-          parts[2] || "00"
-        ).padStart(2, "0")}`;
+        return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
       }
       function formatDateDisplay(d) {
         if (!d) return "--";

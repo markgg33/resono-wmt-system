@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
 }
 
 $role = $_SESSION['role'];
-if (!in_array($role, ["executive", "client", "admin", "user", "supervisor", 'hr'])) {
+if (!in_array($role, ["executive", "client", "admin", "user", "supervisor", "hr"])) {
     echo json_encode(["success" => false, "message" => "Access denied"]);
     exit;
 }
@@ -24,11 +24,14 @@ $where = "WHERE 1=1";
 $params = [];
 $types  = "";
 
-// Dashboard mode → only online users
-if ($mode === "dashboard") {
+// ✅ [CHANGE #1] Exclude client users globally
+$where .= " AND u.role != 'client'";
+
+// Dashboard or widget mode → only online users
+if (in_array($mode, ["dashboard", "widget"])) {
     $where .= " AND u.is_online = 1";
 
-    // Supervisor + Client restriction
+    // Supervisor restriction
     if (in_array($role, ["supervisor", "client"])) {
         $supSql = "SELECT department_id FROM user_departments WHERE user_id = ?";
         $stmt = $conn->prepare($supSql);
@@ -42,25 +45,21 @@ if ($mode === "dashboard") {
         $stmt->close();
 
         if ($filter) {
-            // Only allow filter if it’s inside their allowed list
             if (in_array($filter, $supDepartments)) {
                 $where .= " AND d.id = ?";
                 $types  .= "i";
                 $params[] = $filter;
             } else {
-                // If they try to force another department, deny
                 echo json_encode(["success" => false, "message" => "Unauthorized department filter"]);
                 exit;
             }
         } elseif (!empty($supDepartments)) {
-            // Force filter to their assigned departments
             $in = implode(",", array_fill(0, count($supDepartments), "?"));
             $where .= " AND d.id IN ($in)";
             $types  .= str_repeat("i", count($supDepartments));
             $params = array_merge($params, $supDepartments);
         }
     } elseif ($filter) {
-        // Admin / HR / Exec can filter any dept
         $where .= " AND d.id = ?";
         $types  .= "i";
         $params[] = $filter;
@@ -112,7 +111,11 @@ while ($row = $result->fetch_assoc()) {
     $taskDesc   = strtolower($latestRow['task_description'] ?? "");
     $timeTagged = $latestRow['start_time'] ?? null;
 
-    if ($mode === "dashboard" && ($taskDesc === "end shift" || stripos($task, "end shift") !== false)) {
+    // ✅ [CHANGE #2] Exclude "end shift" users in dashboard OR widget mode
+    if (
+        in_array($mode, ["dashboard", "widget"]) &&
+        ($taskDesc === "end shift" || stripos($task, "end shift") !== false)
+    ) {
         continue;
     }
 

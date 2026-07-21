@@ -1,15 +1,20 @@
 const userAmendment = (() => {
-  // Format HH:MM:SS to 12-hour
-  function formatTo12Hour(value) {
-    if (!value || value === "--") return value;
-    const parts = value.split(":");
-    if (parts.length < 2) return value;
-    let hours = parseInt(parts[0], 10);
-    const minutes = parts[1];
-    const seconds = parts[2] ?? null;
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${hours}:${minutes}${seconds ? ":" + seconds : ""} ${ampm}`;
+  // Format "HH:MM:SS" → "HH:MM" (rounds seconds < 1 min to 01)
+  function formatTimeHHMM(timeStr) {
+    if (!timeStr || timeStr === "--") return "--";
+
+    const [hStr, mStr, sStr] = timeStr.split(":");
+    const hours = parseInt(hStr || 0, 10);
+    const minutes = parseInt(mStr || 0, 10);
+    const seconds = parseInt(sStr || 0, 10);
+
+    const displayMinutes =
+      hours === 0 && minutes === 0 && seconds > 0 ? 1 : minutes;
+
+    return `${String(hours).padStart(2, "0")}:${String(displayMinutes).padStart(
+      2,
+      "0"
+    )}`;
   }
 
   // Status badge
@@ -23,7 +28,7 @@ const userAmendment = (() => {
     return status;
   }
 
-  // Load user amendments 
+  // Load user amendments
   function loadUserAmendments() {
     $.getJSON(
       "../backend/dtr-requests/get_user_amendments.php",
@@ -74,63 +79,73 @@ const userAmendment = (() => {
   }
 
   // Open edit modal
-$(document).on("click", ".user-edit-btn", function () {
-  const id = $(this).data("id");
-  $.getJSON("../backend/dtr-requests/get_user_amendments.php", function (data) {
-    const req = data.requests.find((r) => r.id == id);
-    if (!req) return;
+  $(document).on("click", ".user-edit-btn", function () {
+    const id = $(this).data("id");
+    $.getJSON(
+      "../backend/dtr-requests/get_user_amendments.php",
+      function (data) {
+        const req = data.requests.find((r) => r.id == id);
+        if (!req) return;
 
-    // Fill data
-    $("#userEditRequestId").val(req.id);
-    $("#userEditDate").val(req.date || "--");
-    $("#userEditField").val(req.field);
-    $("#userEditOldStartTime").val(req.old_start_time || "--");
-    $("#userEditOldEndTime").val(req.old_end_time || "--");
-    $("#userEditOldDate").val(req.old_date || "--");
-    $("#userEditNewStartTime").val(req.new_start_time || "");
-    $("#userEditNewEndTime").val(req.new_end_time || "");
-    $("#userEditNewDate").val(req.new_date || "");
-    $("#userEditReason").val(req.reason || "");
+        // Fill data
+        $("#userEditRequestId").val(req.id);
+        $("#userEditDate").val(req.date || "--");
+        $("#userEditField").val(req.field);
+        $("#userEditOldStartTime").val(req.old_start_time || "--");
+        $("#userEditOldStartTime").val(formatTimeHHMM(req.old_start_time));
+        $("#userEditOldEndTime").val(formatTimeHHMM(req.old_end_time));
+        $("#userEditNewStartTime").val(formatTimeHHMM(req.new_start_time));
+        $("#userEditNewEndTime").val(formatTimeHHMM(req.new_end_time));
+        $("#userEditNewDate").val(req.new_date || "");
+        $("#userEditReason").val(req.reason || "");
 
-    // Recipients
-    $.getJSON("../backend/dtr-requests/get_recipients.php", function (res) {
-      const select = $("#userEditRecipientSelect");
-      select.empty().append('<option value="">-- Select Recipient --</option>');
-      if (res.status === "success" && Array.isArray(res.recipients)) {
-        res.recipients.forEach((r) => {
-          select.append(
-            `<option value="${r.id}" ${r.id == req.recipient_id ? "selected" : ""}>
+        // Recipients
+        $.getJSON("../backend/dtr-requests/get_recipients.php", function (res) {
+          const select = $("#userEditRecipientSelect");
+          select
+            .empty()
+            .append('<option value="">-- Select Recipient --</option>');
+          if (res.status === "success" && Array.isArray(res.recipients)) {
+            res.recipients.forEach((r) => {
+              select.append(
+                `<option value="${r.id}" ${
+                  r.id == req.recipient_id ? "selected" : ""
+                }>
               ${r.username} (${r.role})
             </option>`
-          );
+              );
+            });
+          }
         });
+
+        // Field logic (disable/enabled inputs)
+        function toggleFields(field) {
+          $("#userEditDateWrapper").addClass("d-none");
+          $("#userEditNewStartTime").prop("disabled", false);
+          $("#userEditNewEndTime").prop("disabled", false);
+
+          if (field === "start_time") {
+            $("#userEditNewEndTime").prop("disabled", true);
+          } else if (field === "end_time") {
+            $("#userEditNewStartTime").prop("disabled", true);
+          } else if (field === "date") {
+            $("#userEditDateWrapper").removeClass("d-none");
+          }
+        }
+
+        $("#userEditField")
+          .off("change")
+          .on("change", function () {
+            toggleFields($(this).val());
+          });
+        toggleFields(req.field);
+
+        new bootstrap.Modal(
+          document.getElementById("userEditAmendmentModal")
+        ).show();
       }
-    });
-
-    // Field logic (disable/enabled inputs)
-    function toggleFields(field) {
-      $("#userEditDateWrapper").addClass("d-none");
-      $("#userEditNewStartTime").prop("disabled", false);
-      $("#userEditNewEndTime").prop("disabled", false);
-
-      if (field === "start_time") {
-        $("#userEditNewEndTime").prop("disabled", true);
-      } else if (field === "end_time") {
-        $("#userEditNewStartTime").prop("disabled", true);
-      } else if (field === "date") {
-        $("#userEditDateWrapper").removeClass("d-none");
-      }
-    }
-
-    $("#userEditField").off("change").on("change", function () {
-      toggleFields($(this).val());
-    });
-    toggleFields(req.field);
-
-    new bootstrap.Modal(document.getElementById("userEditAmendmentModal")).show();
+    );
   });
-});
-
 
   // Submit form with confirmation
   $("#userEditAmendmentForm").on("submit", function (e) {

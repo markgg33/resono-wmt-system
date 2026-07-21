@@ -7,6 +7,14 @@ function changePage(page) {
   // Show target page
   document.getElementById(page + "-page").style.display = "block";
 
+  // ✅ FIX: delay initialization until DOM is ready/rendered
+  if (page === "data-visualization") {
+    setTimeout(() => {
+      initDepartmentDropdown();
+      loadEmployeeDropdown();
+    }, 0); // minimal delay, enough for render cycle
+  }
+
   // Save last visited page
   localStorage.setItem("lastPage", page);
 }

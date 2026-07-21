@@ -10,34 +10,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password      = $_POST["password"] ?? "";
     $role          = $_POST["role"] ?? "";
     $profile_image = $_POST["profile_image"] ?? "";
+    //FOR LEAVE REQUESTS
+    $vacation = intval($_POST["vacationLeave"] ?? 0);
+    $sick = intval($_POST["sickLeave"] ?? 0);
+    $comp = intval($_POST["compLeave"] ?? 0);
+    $emergency = intval($_POST["emergencyLeave"] ?? 0);
 
-    // 🔹 Parse departments (support JSON or normal array)
-    $departmentsRaw = $_POST["department_ids"] ?? [];
-    if (is_string($departmentsRaw)) {
-        $departments = json_decode($departmentsRaw, true);
-        if (!is_array($departments)) $departments = [];
-    } elseif (is_array($departmentsRaw)) {
-        $departments = [];
-        foreach ($departmentsRaw as $id) {
-            $departments[] = ["id" => intval($id), "primary" => 0];
+    // 🔹 Parse departments (from JSON string sent by JS)
+    $departments = [];
+    if (!empty($_POST["departments"])) {
+        $decoded = json_decode($_POST["departments"], true);
+        if (is_array($decoded)) {
+            $departments = $decoded;
         }
-    } else {
-        $departments = [];
     }
 
-    if (empty($departments)) {
-        echo json_encode(["success" => false, "message" => "No department selected"]);
+    // 🔹 Only require departments for specific roles
+    $rolesRequiringDept = ["user", "supervisor", "client"];
+    if (in_array($role, $rolesRequiringDept) && empty($departments)) {
+        echo json_encode(["success" => false, "message" => "No department selected for this role."]);
         exit;
     }
 
 
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
+    //WITHOUT LEAVE REQUESTS
+    /*
     $stmt = $conn->prepare("
         INSERT INTO users 
         (employee_id, first_name, middle_name, last_name, email, password, role, profile_image)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
+    */
+    //WITH LEAVE REQUESTS
+    $stmt = $conn->prepare("
+        INSERT INTO users 
+(employee_id, first_name, middle_name, last_name, email, password, role, profile_image,
+ vacation_leave, sick_leave, compassionate_leave, emergency_leave)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    //WITHOUT LEAVE REQUESTS
+    /*
     $stmt->bind_param(
         "ssssssss",
         $employee_id,
@@ -49,6 +64,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $role,
         $profile_image
     );
+    */
+    //WITH LEAVE REQUESTS
+    $stmt->bind_param(
+        "ssssssssiiii",
+        $employee_id,
+        $first_name,
+        $middle_name,
+        $last_name,
+        $email,
+        $hashedPassword,
+        $role,
+        $profile_image,
+        $vacation,
+        $sick,
+        $comp,
+        $emergency
+    );
+
 
     if ($stmt->execute()) {
         $new_user_id = $stmt->insert_id;

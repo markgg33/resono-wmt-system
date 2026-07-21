@@ -1,3 +1,5 @@
+// WORKING VERSION
+/*
 // 🔹 Stores all users fetched from backend
 let allUsers = [];
 let currentPage = 1; // 🔹 Pagination: current page
@@ -245,5 +247,249 @@ document
 // 🔹 Initialize
 loadDepartments().then(() => {
   loadUserStatuses();
-  setInterval(loadUserStatuses, 5000);
-});
+  setInterval(loadUserStatuses, 30000); //30 seconds refresh
+});*/
+(() => {
+  let allUsers = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+  let isFetching = false; // 🔹 prevent overlapping requests
+
+  function getFallbackMessage() {
+    if (typeof userRole !== "undefined" && userRole === "supervisor") {
+      return "No users online in your department";
+    }
+    return "No users online";
+  }
+
+  async function loadDepartments() {
+    try {
+      const res = await fetch("../backend/get_user_departments.php");
+      const data = await res.json();
+      const select = document.getElementById("dashDepartmentFilter");
+      if (!select) return;
+      select.innerHTML = "";
+
+      if (["admin", "executive", "hr"].includes(userRole)) {
+        select.innerHTML = `<option value="">All Departments</option>`;
+      }
+
+      data.forEach((dept) => {
+        if (dept.name.toLowerCase() !== "unassigned") {
+          const option = document.createElement("option");
+          option.value = dept.id;
+          option.textContent = dept.name;
+          select.appendChild(option);
+        }
+      });
+    } catch (err) {
+      console.error("Error loading departments:", err);
+    }
+  }
+
+  async function loadUserStatuses() {
+    if (isFetching) return; // 🔒 prevent overlapping
+    isFetching = true;
+
+    try {
+      let dashUrl = "../backend/get_user_statuses.php?mode=dashboard";
+      const filter =
+        document.getElementById("dashDepartmentFilter")?.value || "";
+
+      if (
+        userRole === "supervisor" &&
+        Array.isArray(supervisorDepartments) &&
+        supervisorDepartments.length > 0 &&
+        !filter
+      ) {
+        dashUrl += `&department_ids=${encodeURIComponent(supervisorDepartments.join(","))}`;
+      } else if (filter) {
+        dashUrl += `&department_id=${filter}`;
+      }
+
+      const dashRes = await fetch(dashUrl);
+      const dashData = await dashRes.json();
+      if (dashData.success) {
+        const newUsers = dashData.users || [];
+        // 🔹 Only update if data changed to reduce DOM re-renders
+        if (JSON.stringify(newUsers) !== JSON.stringify(allUsers)) {
+          allUsers = newUsers;
+          currentPage = 1;
+          renderTable();
+          renderPaginationControls();
+        }
+      }
+
+      // Widget fetch (can be combined later)
+      const widgetRes = await fetch(
+        "../backend/get_user_statuses.php?mode=widget",
+      );
+      const widgetData = await widgetRes.json();
+      if (widgetData.success) renderOnlineWidget(widgetData.users || []);
+    } catch (err) {
+      console.error("Error loading statuses:", err);
+    } finally {
+      isFetching = false; // 🔓 release lock
+    }
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById("statusTable");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (allUsers.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" class="text-center text-muted py-3">${getFallbackMessage()}</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const usersToShow = allUsers.slice(start, end);
+
+    usersToShow.forEach((user) => {
+      const colorClass =
+        user.status === "active"
+          ? "text-success"
+          : user.status === "away"
+            ? "text-warning"
+            : "text-secondary";
+
+      const timeTagged = user.time_tagged
+        ? new Date("1970-01-01T" + user.time_tagged).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "--";
+
+      const deptBadges = (user.departments || [user.department])
+        .map(
+          (d) => `<span class="badge bg-success text-white me-1">${d}</span>`,
+        )
+        .join(" ");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="fw-semibold d-flex align-items-center">
+          <img src="${user.profile_image}" alt="${user.full_name}" class="rounded-circle me-2" width="32" height="32" onerror="this.onerror=null;this.src='../assets/default-avatar.jpg';">
+          ${user.full_name}
+        </td>
+        <td>${deptBadges}</td>
+        <td><span class="${colorClass} fw-bold">●</span> ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</td>
+        <td>${user.latest_task}</td>
+        <td>${timeTagged}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderPaginationControls() {
+    const container = document.getElementById("paginationControls");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const totalPages = Math.ceil(allUsers.length / rowsPerPage);
+    if (totalPages <= 1) return;
+
+    const createBtn = (text, disabled, onClick, isActive = false) => {
+      const btn = document.createElement("button");
+      btn.className = `btn btn-sm me-1 ${isActive ? "btn-success" : "btn-outline-success"}`;
+      btn.textContent = text;
+      btn.disabled = disabled;
+      btn.addEventListener("click", onClick);
+      return btn;
+    };
+
+    container.appendChild(
+      createBtn("Previous", currentPage === 1, () => {
+        currentPage--;
+        renderTable();
+        renderPaginationControls();
+      }),
+    );
+    for (let i = 1; i <= totalPages; i++) {
+      container.appendChild(
+        createBtn(
+          i,
+          false,
+          () => {
+            currentPage = i;
+            renderTable();
+            renderPaginationControls();
+          },
+          i === currentPage,
+        ),
+      );
+    }
+    container.appendChild(
+      createBtn("Next", currentPage === totalPages, () => {
+        currentPage++;
+        renderTable();
+        renderPaginationControls();
+      }),
+    );
+  }
+
+  function renderOnlineWidget(users) {
+    const list = document.getElementById("onlineUsersList");
+    if (!list) return;
+    list.innerHTML = "";
+
+    if (users.length === 0) {
+      const li = document.createElement("li");
+      li.className = "list-group-item text-center text-muted border-0";
+      li.textContent = getFallbackMessage();
+      list.appendChild(li);
+      return;
+    }
+
+    users.forEach((user) => {
+      const colorClass =
+        user.status === "active"
+          ? "text-success"
+          : user.status === "away"
+            ? "text-warning"
+            : "text-secondary";
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex align-items-center border-0 px-1 py-2";
+      li.innerHTML = `
+        <img src="${user.profile_image}" alt="${user.full_name}" class="rounded-circle me-2 flex-shrink-0" width="40" height="40" onerror="this.onerror=null;this.src='../assets/default-avatar.jpg';">
+        <span class="${colorClass} fw-bold me-2" style="font-size:1.2rem;">●</span>
+        <div class="d-flex flex-column">
+          <span>${user.full_name}</span>
+          <strong><small class="text-muted">${user.department}</small></strong>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  // Toggle popup
+  const toggleBtn = document.getElementById("onlineToggle");
+  if (toggleBtn)
+    toggleBtn.addEventListener("click", () => {
+      const popup = document.getElementById("onlineUsersPopup");
+      popup.style.display = popup.style.display === "none" ? "block" : "none";
+    });
+
+  document.addEventListener("click", (e) => {
+    const widget = document.getElementById("onlineWidget");
+    const popup = document.getElementById("onlineUsersPopup");
+    if (widget && popup && !widget.contains(e.target))
+      popup.style.display = "none";
+  });
+
+  document
+    .getElementById("dashDepartmentFilter")
+    ?.addEventListener("change", loadUserStatuses);
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadDepartments().then(() => {
+      loadUserStatuses();
+      setInterval(loadUserStatuses, 300000); // 🔹 increased interval to 5 mins
+    });
+  });
+})();

@@ -1,8 +1,10 @@
 <?php
 // FOR LOGIN
 header('Content-Type: application/json');
-session_start();
 require 'connection_db.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -45,6 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user['last_name']
             );
             $_SESSION['name'] = $full_name;
+
+            //FAIL SAFE REMOVE IF NOT WORKING
+
+            /* 🔓 RELEASE SESSION LOCK HERE */
+            session_write_close();
 
             // Mark online , need to set to 0 if ever tab was closed accidentally
             $conn->query("UPDATE users SET is_online = 1 WHERE id = {$user['id']}");

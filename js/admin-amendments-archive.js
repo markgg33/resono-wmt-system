@@ -1,33 +1,52 @@
-function openArchiveAmendmentModal(requestId) {
-  fetch(`../backend/get_admin_amendments_archive.php?page=1`) // fetch archive data
-    .then((res) => res.json())
-    .then((data) => {
-      const req = data.requests.find((r) => r.id == requestId);
-      if (!req) return;
+//REVISED ADMIN-AMENDMENTS-ARCHIVE.JS
+// ================================
+// Format HH:MM:SS to 24-hour HH:MM //NEW TIME SECOND REMOVER
+// ================================
+function formatTo24Hour(value) {
+  if (!value || value === "--") return value;
 
-      document.getElementById("amendmentModalBody").innerHTML = `
-  <p><b>Requester:</b> ${req.requester_name}</p>
-  <p><b>Task:</b> ${req.task_description}</p>
-  <p><b>Date:</b> ${req.date}</p>
-  <p><b>Requested Field:</b> ${req.field}</p>
-  <p><b>Old Value:</b> ${req.old_value}</p>
-  <p><b>New Value:</b> ${req.new_value}</p>
-  <p><b>Reason:</b> ${req.reason}</p>
-  <p><b>Status:</b> ${req.status}</p>
-  <p><b>Processed At:</b> ${req.processed_at ?? "-"}</p>
-  <p><b>Processed By:</b> ${
-    req.processed_by_name
-      ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
-      : "-"
-  }</p>
-`;
+  const parts = value.split(":");
+  if (parts.length < 2) return value;
 
-      // Hide decision buttons (archive = read only)
-      document.getElementById("approveBtn").style.display = "none";
-      document.getElementById("rejectBtn").style.display = "none";
+  const hours = parts[0].padStart(2, "0");
+  const minutes = parts[1].padStart(2, "0");
 
-      new bootstrap.Modal(document.getElementById("amendmentModal")).show();
-    });
+  return `${hours}:${minutes}`;
+}
+
+// ================================
+// Open Archive Amendment Modal
+// ================================
+function openArchiveAmendmentModal(req) {
+  if (!req) return;
+
+  document.getElementById("amendmentModalBody").innerHTML = `
+    <p><b>Requester:</b> ${req.requester_name}</p>
+    <p><b>Task:</b> ${req.task_description}</p>
+    <p><b>Date:</b> ${req.date ? req.date.split(" ")[0] : "--"}</p>
+    <p><b>Requested Field:</b> ${req.field}</p>
+    <p><b>Old Value:</b> ${
+      req.field.includes("time") ? formatTo24Hour(req.old_value) : req.old_value
+    }</p>
+    <p><b>New Value:</b> ${
+      req.field.includes("time") ? formatTo24Hour(req.new_value) : req.new_value
+    }</p>
+    <p><b>Reason:</b> ${req.reason}</p>
+    <p><b>Status:</b> ${req.status}</p>
+    <p><b>Processed At:</b> ${
+      req.processed_at ? req.processed_at.replace("T", " ").split(".")[0] : "-"
+    }</p>
+    <p><b>Processed By:</b> ${
+      req.processed_by_name
+        ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
+        : "-"
+    }</p>
+  `;
+
+  document.getElementById("approveBtn").style.display = "none";
+  document.getElementById("rejectBtn").style.display = "none";
+
+  new bootstrap.Modal(document.getElementById("amendmentModal")).show();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -67,31 +86,40 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     requests.forEach((req) => {
-      const row = `
-  <tr>
-    <td><span class="badge bg-success">${req.request_uid}</span></td>
-    <td>${req.requester_name}</td>
-    <td>
-      <span class="badge ${
-        req.status.toLowerCase() === "approved" ? "bg-success" : "bg-danger"
-      }">
-  ${req.status.charAt(0).toUpperCase() + req.status.slice(1).toLowerCase()}
-</span>
-    </td>
-    <td>${req.processed_at ? req.processed_at : "-"}</td>
-    <td>${
-      req.processed_by_name
-        ? req.processed_by_name + " (" + (req.processed_by_role || "") + ")"
-        : "-"
-    }</td>
-    <td>
-      <button class="btn btn-sm btn-success" onclick="openArchiveAmendmentModal(${
-        req.id
-      })">View</button>
-    </td>
-  </tr>
-`;
+      const safeData = encodeURIComponent(JSON.stringify(req));
 
+      const row = `
+        <tr>
+          <td><span class="badge bg-success">${req.request_uid}</span></td>
+          <td>${req.requester_name}</td>
+          <td>
+            <span class="badge ${
+              req.status.toLowerCase() === "approved"
+                ? "bg-success"
+                : "bg-danger"
+            }">
+              ${
+                req.status.charAt(0).toUpperCase() +
+                req.status.slice(1).toLowerCase()
+              }
+            </span>
+          </td>
+          <td>${req.processed_at ? req.processed_at : "-"}</td>
+          <td>${
+            req.processed_by_name
+              ? req.processed_by_name +
+                " (" +
+                (req.processed_by_role || "") +
+                ")"
+              : "-"
+          }</td>
+          <td>
+            <button class="btn btn-sm btn-success view-btn" data-request="${safeData}">
+              View
+            </button>
+          </td>
+        </tr>
+      `;
       tableBody.insertAdjacentHTML("beforeend", row);
     });
   }
@@ -118,6 +146,18 @@ document.addEventListener("DOMContentLoaded", function () {
       paginationContainer.appendChild(btn);
     }
   }
+
+  // ✅ Delegated event listener (works even after pagination reload)
+  document
+    .getElementById("admin-amendments-archive-table")
+    .addEventListener("click", (e) => {
+      if (e.target.classList.contains("view-btn")) {
+        const data = e.target.getAttribute("data-request");
+        if (!data) return;
+        const req = JSON.parse(decodeURIComponent(data));
+        openArchiveAmendmentModal(req);
+      }
+    });
 
   // Initial load
   fetchArchive(currentPage);

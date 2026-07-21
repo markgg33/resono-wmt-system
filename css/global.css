@@ -66,7 +66,9 @@
 .sidebar-list-item {
   border-top-left-radius: 20px;
   padding: 20px 10px;
-  transition: background-color 100ms, color 100ms;
+  transition:
+    background-color 100ms,
+    color 100ms;
 }
 
 .sidebar-list-item i {
@@ -99,11 +101,14 @@
 }
 
 .btn-logout {
-  padding: 10px 20px;
+  padding: 15px 20px !important;
   border: 1px solid #106b04;
   border-radius: 5px;
   background-color: #ebebeb;
-  transition: border 100ms, color 100ms, background-color 100ms;
+  transition:
+    border 100ms,
+    color 100ms,
+    background-color 100ms;
   color: #106b04;
 }
 
@@ -255,7 +260,9 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-control-modern:focus {
@@ -278,7 +285,9 @@
   border-radius: 6px;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
 }
 
 .btn-modern:hover {
@@ -332,7 +341,9 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-control-modern:focus {
@@ -355,7 +366,9 @@
   border-radius: 6px;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
 }
 
 .btn-modern:hover {
@@ -452,4 +465,285 @@
   font-size: 0.85rem;
   margin: 2px 0;
   word-break: break-word;
+}
+
+#taskList {
+  max-height: 500px; /* adjust based on your layout height */
+  overflow-y: auto; /* enables vertical scrolling */
+  padding-right: 5px; /* avoids clipping scrollbar */
+}
+
+/*------------------------------------*
+   * 📦 DASHBOARD CARDS
+   *------------------------------------*/
+.main-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.leave-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #f9f9f9;
+  font-weight: bold;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.card-inner {
+  margin-bottom: 10px;
+}
+
+.leave-card i {
+  font-size: 30px;
+  margin-bottom: 20px;
+  margin-top: 10px;
+}
+
+.card p {
+  font-size: 15px;
+  margin: 0;
+}
+
+.slide-button-handle.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.attachment-card {
+  border-radius: 10px;
+}
+
+.attachment-filename {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/*FOR SCHEDULER CSS*/
+
+.scheduler-matrix-wrap {
+  max-height: 70vh;
+  overflow: auto;
+  border-radius: 10px;
+}
+
+#schedulerMatrixTable thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 5;
+}
+
+.scheduler-sticky-col {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 6;
+  min-width: 90px;
+  font-weight: 700;
+}
+
+.scheduler-sticky-col-2 {
+  position: sticky;
+  left: 90px;
+  background: #fff;
+  z-index: 6;
+  min-width: 90px;
+}
+
+.scheduler-cell {
+  cursor: pointer;
+  user-select: none;
+  min-width: 70px;
+  height: 32px;
+  font-weight: 600;
+}
+
+.scheduler-cell.selected {
+  outline: 2px solid #198754;
+  background: #eaf7ef;
+}
+
+/* Default */
+.scheduler-cell {
+  transition: 0.15s ease;
+}
+/* Work Day (blank) */
+.scheduler-w {
+  background: #fff !important;
+}
+
+/* Off */
+.scheduler-off {
+  background: #adadad !important;
+}
+
+/* PH */
+.scheduler-rh,
+.scheduler-sh {
+  background: #ffc0cb !important;
+}
+
+/* Leave, SBL */
+.scheduler-leave,
+.scheduler-sbl,
+.scheduler-rhl,
+.scheduler-toil {
+  background: #b6e7a7 !important;
+}
+
+/* Sick-PL */
+.scheduler-sick {
+  background: #4caf50 !important;
+  color: #fff !important;
+}
+
+/* Unpaid */
+.scheduler-unpaid {
+  background: #d9fdd3 !important;
+}
+
+/* Suspended */
+.scheduler-spnd {
+  background: #ff4d4d !important;
+  color: #fff !important;
+}
+
+/* Absent , LWOP*/
+.scheduler-absent,
+.scheduler-lwop {
+  color: #d10000 !important;
+  font-weight: 700 !important;
+}
+
+/* Callback */
+.scheduler-cb {
+  background: #ffe066 !important;
+}
+
+.scheduler-val {
+  line-height: 1.1;
+}
+
+.scheduler-time {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.calltime-menu {
+  max-height: 220px; /* adjust to taste */
+  overflow-y: auto;
+}
+
+#summaryTable {
+  font-size: 13px;
+}
+
+/* ===== Announcement Carousel ===== */
+
+#announcementCarousel {
+  max-width: 1080px;
+  min-height: 400px;
+  margin: auto;
+}
+
+/* .carousel-inner {
+  height: 540px;
+}
+
+#announcementCarousel .carousel-item {
+  height: 540px;
+}*/
+
+#announcementCarousel .carousel-inner {
+  display: block;
+}
+
+#announcementCarousel .carousel-item {
+  height: auto;
+}
+
+/*#announcementCarousel img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+}*/
+
+/* Card body spacing */
+#announcementCarousel .card-body {
+  height: 180px;
+  overflow: hidden;
+}
+
+/* Keep buttons centered and stable */
+#announcementCarousel .carousel-control-prev,
+#announcementCarousel .carousel-control-next {
+  width: 6%;
+}
+
+#announcementCarousel .carousel-control-prev:hover,
+#announcementCarousel .carousel-control-next:hover {
+  background: rgba(9, 61, 2, 0.1);
+}
+
+.announcement-img {
+  width: 100%;
+  height: 80%; /* FIXED image area */
+  object-fit: contain;
+  background: #f8f9fa;
+}
+
+.announcement-carousel-card {
+  max-width: 900px;
+  height: 540px; /* match carousel */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 992px) {
+  #announcementCarousel .carousel-inner {
+    height: auto;
+  }
+
+  #announcementCarousel img {
+    height: 280px;
+  }
+
+  #announcementCarousel .card-body {
+    height: auto;
+  }
+}
+
+#tabContentWrapper {
+  max-height: 380px; /* adjust based on your card */
+  overflow-y: auto;
+}
+
+/* NEW FILTER CSS */
+
+.analytics-filter-row {
+  row-gap: 12px;
+}
+
+.analytics-filter-row label {
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.analytics-filter-row .form-control,
+.analytics-filter-row .form-select,
+.analytics-filter-row .btn {
+  height: 42px;
+}
+
+.analytics-filter-row > div {
+  min-width: 170px;
 }

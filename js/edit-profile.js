@@ -4,72 +4,90 @@ document.addEventListener("DOMContentLoaded", function () {
   const fileInput = document.getElementById("edit_profile_image");
   const submitBtn = document.getElementById("profileSubmitBtn");
 
-  // Elements for multi-department dropdown
-  const departmentField = document.createElement("div");
-  const deptDropdownBtn = document.createElement("button");
-  const deptDropdown = document.createElement("ul");
-  const hiddenInput = document.createElement("input");
-
-  // Setup dropdown structure
-  departmentField.className = "dropdown mb-3";
-  deptDropdownBtn.className = "btn btn-secondary dropdown-toggle w-100";
-  deptDropdownBtn.setAttribute("type", "button");
-  deptDropdownBtn.setAttribute("data-bs-toggle", "dropdown");
-  deptDropdownBtn.textContent = "Select Departments";
-
-  deptDropdown.className = "dropdown-menu w-100 p-2";
-  deptDropdown.style.maxHeight = "200px";
-  deptDropdown.style.overflowY = "auto";
-
-  hiddenInput.type = "hidden";
-  hiddenInput.id = "edit_departments_hidden";
-
-  departmentField.appendChild(deptDropdownBtn);
-  departmentField.appendChild(deptDropdown);
-  departmentField.appendChild(hiddenInput);
-
-  // Replace old single select
+  // ===============================
+  // 🔹 PATCH 1: Detect if department select exists
+  // ===============================
   const oldSelect = document.getElementById("edit_department_select");
-  oldSelect.parentNode.replaceChild(departmentField, oldSelect);
+  const hasDepartment = !!oldSelect;
+  let deptDropdown, deptDropdownBtn, hiddenInput;
 
-  // Load profile
+  if (hasDepartment) {
+    const departmentField = document.createElement("div");
+    deptDropdownBtn = document.createElement("button");
+    deptDropdown = document.createElement("ul");
+    hiddenInput = document.createElement("input");
+
+    departmentField.className = "dropdown mb-3";
+    deptDropdownBtn.className = "btn btn-secondary dropdown-toggle w-100";
+    deptDropdownBtn.type = "button";
+    deptDropdownBtn.setAttribute("data-bs-toggle", "dropdown");
+    deptDropdownBtn.textContent = "Select Departments";
+
+    deptDropdown.className = "dropdown-menu w-100 p-2";
+    deptDropdown.style.maxHeight = "200px";
+    deptDropdown.style.overflowY = "auto";
+
+    hiddenInput.type = "hidden";
+    hiddenInput.id = "edit_departments_hidden";
+
+    departmentField.appendChild(deptDropdownBtn);
+    departmentField.appendChild(deptDropdown);
+    departmentField.appendChild(hiddenInput);
+
+    oldSelect.parentNode.replaceChild(departmentField, oldSelect);
+  }
+
+  // ===============================
+  // 🔹 PATCH 2: Load Profile (works for all roles)
+  // ===============================
   fetch("../backend/get_user_profile.php")
-    .then((response) => response.json())
+    .then((res) => res.json())
     .then((data) => {
       if (data.error) {
         msgDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
         return;
       }
 
-      document.getElementById("edit_employee_id").value =
-        data.employee_id || "";
-      document.getElementById("edit_first_name").value = data.first_name || "";
-      document.getElementById("edit_middle_name").value =
-        data.middle_name || "";
-      document.getElementById("edit_last_name").value = data.last_name || "";
-      document.getElementById("edit_email").value = data.email || "";
-      document.getElementById("edit_role").value = data.role || "";
+      // ✅ Fill info
+      const fill = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+      };
 
-      // Show current profile image
-      const imgPath = data.profile_image
+      fill("edit_employee_id", data.employee_id);
+      fill("edit_first_name", data.first_name);
+      fill("edit_middle_name", data.middle_name);
+      fill("edit_last_name", data.last_name);
+      fill("edit_email", data.email);
+      fill("edit_role", data.role);
+
+      // ✅ Image
+      previewImg.src = data.profile_image
         ? `../${data.profile_image}`
         : "../assets/default-avatar.jpg";
-      previewImg.src = imgPath;
 
-      // Lock inputs if role is "user"
-      const isUser = (data.role || "").toLowerCase() === "user";
-      [
-        "edit_employee_id",
-        "edit_first_name",
-        "edit_middle_name",
-        "edit_last_name",
-      ].forEach((id) => (document.getElementById(id).disabled = isUser));
+      // ✅ Determine role
+      const role = (data.role || "").toLowerCase();
+      const isUserOrClient = role === "user" || role === "client";
 
-      submitBtn.textContent = isUser ? "Update Photo" : "Update Profile";
+      ["edit_first_name", "edit_middle_name", "edit_last_name"].forEach(
+        (id) => {
+          const input = document.getElementById(id);
+          if (input) input.disabled = isUserOrClient;
+        }
+      );
 
-      // ===== Load departments for multi-select dropdown =====
+      submitBtn.textContent = isUserOrClient
+        ? "Update Photo"
+        : "Update Profile";
+
+      // ===============================
+      // 🔹 PATCH 3: Always load departments if exists
+      // ===============================
+      if (!hasDepartment) return; // if there's no department field, skip
+
       fetch("../backend/get_departments.php")
-        .then((res) => res.json())
+        .then((r) => r.json())
         .then((departments) => {
           deptDropdown.innerHTML = "";
 
@@ -81,14 +99,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const label = document.createElement("label");
             label.className = "dropdown-item flex-grow-1 mb-0";
 
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.className = "dept-checkbox me-2";
-            checkbox.value = dept.id;
-            checkbox.dataset.name = dept.name;
-
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(dept.name));
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.className = "dept-checkbox me-2";
+            chk.value = dept.id;
+            chk.dataset.name = dept.name;
 
             const radio = document.createElement("input");
             radio.type = "radio";
@@ -97,12 +112,14 @@ document.addEventListener("DOMContentLoaded", function () {
             radio.value = dept.id;
             radio.title = "Set Primary";
 
+            label.appendChild(chk);
+            label.appendChild(document.createTextNode(dept.name));
             li.appendChild(label);
             li.appendChild(radio);
             deptDropdown.appendChild(li);
           });
 
-          // Pre-check assigned departments
+          // ✅ Pre-check assigned departments
           const assignedIds = (data.departments || []).map((d) => String(d.id));
           const primaryId = (data.departments || []).find(
             (d) => d.is_primary
@@ -115,17 +132,17 @@ document.addEventListener("DOMContentLoaded", function () {
             if (String(r.value) === String(primaryId)) r.checked = true;
           });
 
-          updateDropdown(); // initial render of badges
+          updateDropdown();
 
-          if (isUser) {
-            // Disable interaction but still show assigned departments
+          /* ✅ PATCHED: if user or client, disable all dept interactions but show names
+          if (isUserOrClient) {
             deptDropdownBtn.disabled = true;
             deptDropdown
               .querySelectorAll("input")
               .forEach((input) => (input.disabled = true));
 
             const selectedNames = (data.departments || []).map((d) => {
-              return `<span class="dept-badge">${d.name}${
+              return `<span class="badge bg-success me-1">${d.name}${
                 d.is_primary ? " ⭐" : ""
               }</span>`;
             });
@@ -134,54 +151,84 @@ document.addEventListener("DOMContentLoaded", function () {
               selectedNames.length > 0
                 ? selectedNames.join(" ")
                 : "No Departments Assigned";
-          } else {
-            // Add event listeners for checkboxes and radios
-            deptDropdown.querySelectorAll(".dept-checkbox").forEach((chk) => {
-              chk.addEventListener("change", updateDropdown);
+            return; // stop here (no event listeners needed)
+          }*/
+
+          // ✅ PATCHED: Disable department editing for user, client, and supervisor
+          const isRestrictedRole =
+            role === "user" || role === "client" || role === "supervisor";
+
+          if (isRestrictedRole) {
+            deptDropdownBtn.disabled = true;
+            deptDropdown
+              .querySelectorAll("input")
+              .forEach((input) => (input.disabled = true));
+
+            const selectedNames = (data.departments || []).map((d) => {
+              return `<span class="badge bg-success me-1">${d.name}${
+                d.is_primary ? " ⭐" : ""
+              }</span>`;
             });
-            deptDropdown.querySelectorAll(".dept-primary").forEach((r) => {
-              r.addEventListener("change", updateDropdown);
-            });
+
+            deptDropdownBtn.innerHTML =
+              selectedNames.length > 0
+                ? selectedNames.join(" ")
+                : "No Departments Assigned";
+            return; // stop here (no event listeners needed)
           }
-        });
 
-      function updateDropdown() {
-        const selected = [];
-        const names = [];
-
-        deptDropdown
-          .querySelectorAll(".dept-checkbox:checked")
-          .forEach((chk) => {
-            const radio = deptDropdown.querySelector(
-              `.dept-primary[value="${chk.value}"]`
-            );
-            const isPrimary = radio.checked;
-            selected.push({ id: chk.value, primary: isPrimary });
-            names.push(`${chk.dataset.name}${isPrimary ? " ⭐" : ""}`);
+          // ✅ For admin/higher roles: enable department editing
+          deptDropdown.querySelectorAll(".dept-checkbox").forEach((chk) => {
+            chk.addEventListener("change", updateDropdown);
+          });
+          deptDropdown.querySelectorAll(".dept-primary").forEach((r) => {
+            r.addEventListener("change", updateDropdown);
           });
 
-        hiddenInput.value = JSON.stringify(selected);
-        deptDropdownBtn.innerHTML =
-          names.length > 0
-            ? names
-                .map((n) => `<span class="badge bg-success me-1">${n}</span>`)
-                .join("")
-            : "Select Departments";
-      }
+          function updateDropdown() {
+            const selected = [];
+            const names = [];
+
+            deptDropdown
+              .querySelectorAll(".dept-checkbox:checked")
+              .forEach((chk) => {
+                const radio = deptDropdown.querySelector(
+                  `.dept-primary[value="${chk.value}"]`
+                );
+                const isPrimary = radio.checked;
+                selected.push({ id: chk.value, primary: isPrimary });
+                names.push(`${chk.dataset.name}${isPrimary ? " ⭐" : ""}`);
+              });
+
+            hiddenInput.value = JSON.stringify(selected);
+            deptDropdownBtn.innerHTML =
+              names.length > 0
+                ? names
+                    .map(
+                      (n) => `<span class="badge bg-success me-1">${n}</span>`
+                    )
+                    .join("")
+                : "Select Departments";
+          }
+        });
     })
     .catch((err) => {
       console.error("Error loading profile:", err);
       msgDiv.innerHTML = `<div class="alert alert-danger">Error loading profile.</div>`;
     });
 
-  // Preview new image before upload
+  // ===============================
+  // 🔹 PATCH 4: Image Preview
+  // ===============================
   fileInput.addEventListener("change", function () {
     if (this.files && this.files[0]) {
       previewImg.src = URL.createObjectURL(this.files[0]);
     }
   });
 
-  // ===== Submit form =====
+  // ===============================
+  // 🔹 PATCH 5: Profile Form Submit
+  // ===============================
   document
     .getElementById("updateProfileForm")
     .addEventListener("submit", function (e) {
@@ -203,11 +250,14 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       formData.append(
         "employee_id",
-        document.getElementById("edit_employee_id").value || ""
+        document.getElementById("edit_employee_id")
+          ? document.getElementById("edit_employee_id").value
+          : ""
       );
 
-      // Send multi-department JSON
-      formData.append("departments", hiddenInput.value);
+      if (hasDepartment && hiddenInput) {
+        formData.append("departments", hiddenInput.value);
+      }
 
       if (fileInput.files.length > 0) {
         formData.append("profile_image", fileInput.files[0]);
@@ -234,11 +284,13 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch((err) => console.error("Error updating profile:", err));
     });
 
-  // ===== PATCH FIX: Change Password Handler =====
+  // ===============================
+  // 🔹 PATCH 6: Change Password Form
+  // ===============================
   const changeForm = document.getElementById("changePasswordForm");
   if (changeForm) {
     changeForm.addEventListener("submit", function (e) {
-      e.preventDefault(); // prevent page refresh
+      e.preventDefault();
       if (!confirm("Update Password?")) return;
 
       const payload = {
@@ -254,12 +306,12 @@ document.addEventListener("DOMContentLoaded", function () {
       })
         .then((res) => res.json())
         .then((data) => {
-          const msgDiv = document.getElementById("passwordMessage");
+          const msg = document.getElementById("passwordMessage");
           if (data.success) {
-            msgDiv.innerHTML = `<div class="alert alert-success">${data.success}</div>`;
+            msg.innerHTML = `<div class="alert alert-success">${data.success}</div>`;
             changeForm.reset();
           } else {
-            msgDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            msg.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
           }
         })
         .catch((err) => {

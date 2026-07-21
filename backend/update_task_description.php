@@ -2,45 +2,63 @@
 require 'connection_db.php';
 header('Content-Type: application/json');
 
-$data = json_decode(file_get_contents("php://input"), true);
+$id = $_POST['id'] ?? null;
+$description = trim($_POST['description'] ?? '');
+$billing_category_id = $_POST['billing_category_id'] ?? null;
+$standard_aht = $_POST['standard_aht'] ?? null;
 
-$workModeId = $data['work_mode_id'] ?? null;
-$descriptions = $data['tasks'] ?? [];
+// ✅ Convert empty string to NULL (fix FK issue)
+if ($billing_category_id === "" || $billing_category_id === "null") {
+    $billing_category_id = null;
+}
 
-if (!$workModeId || !is_array($descriptions)) {
+if (!$id || $description === '') {
     echo json_encode(['success' => false, 'message' => 'Invalid input.']);
     exit;
 }
 
-$duplicates = [];
-$stmt = $conn->prepare("SELECT id FROM task_descriptions WHERE work_mode_id = ? AND LOWER(description) = LOWER(?)");
-$insert = $conn->prepare("INSERT INTO task_descriptions (work_mode_id, description) VALUES (?, ?)");
+// ✅ Check for duplicates in the same work mode
+$check = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM task_descriptions 
+    WHERE LOWER(description) = LOWER(?) AND id != ?
+");
+$check->bind_param("si", $description, $id);
+$check->execute();
+$check->bind_result($count);
+$check->fetch();
+$check->close();
 
-foreach ($descriptions as $desc) {
-    $desc = trim($desc);
-    if (!empty($desc)) {
-        $stmt->bind_param("is", $workModeId, $desc);
-        $stmt->execute();
-        $stmt->store_result();
-
-        if ($stmt->num_rows > 0) {
-            $duplicates[] = $desc;
-        } else {
-            $insert->bind_param("is", $workModeId, $desc);
-            $insert->execute();
-        }
-    }
+if ($count > 0) {
+    echo json_encode(['success' => false, 'duplicate' => true]);
+    exit;
 }
 
-$response = ['success' => true, 'message' => 'Tasks saved.'];
-if (!empty($duplicates)) {
-    $response['duplicates'] = $duplicates;
-    $response['message'] = 'Some tasks were not added due to duplication.';
-}
+// ✅ Update the task description
+//$stmt = $conn->prepare("UPDATE task_descriptions SET description = ? WHERE id = ?");
+/*$stmt = $conn->prepare("UPDATE task_descriptions
+SET description = ?, billing_category_id = ?
+WHERE id = ?");
+//$stmt->bind_param("si", $description, $id);
+$stmt->bind_param("sii", $description, $billing_category_id, $id);*/
 
-echo json_encode($response);
+// ADDED STANDARD AHT
+$stmt = $conn->prepare("
+ UPDATE task_descriptions
+    SET description = ?,
+        billing_category_id = ?,
+        standard_aht = ?
+    WHERE id = ?
+");
+
+if ($billing_category_id === null) {
+    // Use NULL safely
+    $stmt->bind_param("sidi", $description, $billing_category_id, $standard_aht, $id);
+} else {
+    $stmt->bind_param("sidi", $description, $billing_category_id, $standard_aht, $id);
+}
+$success = $stmt->execute();
 $stmt->close();
-$insert->close();
-$conn->close();
 
-//NOW REJECTS DUPLICATES
+echo json_encode(['success' => $success]);
+$conn->close();
