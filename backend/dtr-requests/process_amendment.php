@@ -754,12 +754,13 @@ function recompute_work_date_and_end_date(mysqli $conn, string $table, int $id):
     $callTime  = normalizeTime($row['call_time'] ?? null);
 
     // 1) Recompute work_date (shift day)
+    /*
     $workDate = $calendarDate;
     if ($callTime && $startTime && $startTime < $callTime) {
         $dt = new DateTime($calendarDate);
         $dt->modify('-1 day');
         $workDate = $dt->format('Y-m-d');
-    }
+    }*/
 
     // 2) Recompute end_date (calendar day end)
     /*$endDate = null;
@@ -771,6 +772,23 @@ function recompute_work_date_and_end_date(mysqli $conn, string $table, int $id):
             $endDate = $dt->format('Y-m-d');
         }
     }*/
+
+    // 1) Preserve the existing shift (work_date)
+    //
+    // DTR amendments are allowed to change the calendar date/time,
+    // but they must not move a task into a different shift.
+    $workDate = !empty($row['work_date'])
+        ? $row['work_date']
+        : $calendarDate;
+
+    // Legacy fallback only.
+    // For historical records that have no work_date,
+    // infer it using call_time.
+    if (empty($row['work_date']) && $callTime && $startTime && $startTime < $callTime) {
+        $dt = new DateTime($calendarDate);
+        $dt->modify('-1 day');
+        $workDate = $dt->format('Y-m-d');
+    }
 
     $endDate = $calendarDate;
 
@@ -865,7 +883,7 @@ if ($field === "date") {
     }
 
     // Update start_time (+ optional calendar date)
-    $sqlParts = ["start_time = ?"];
+    /*$sqlParts = ["start_time = ?"];
     $params = [$newStart];
     $types = "s";
 
@@ -873,14 +891,40 @@ if ($field === "date") {
         $sqlParts[] = "date = ?";
         $params[] = $newDate;
         $types .= "s";
-    }*/
+    }
 
     // Only allow date updates if this is actually a date amendment
     if ($field === 'date' && !empty($newDate)) {
         $sqlParts[] = "date = ?";
         $params[] = $newDate;
         $types .= "s";
+    }*/
+
+    $sqlParts = [];
+
+    $params = [];
+
+    $types = "";
+
+    /*
+|--------------------------------------------------------------------------
+| Update calendar date if supplied
+|--------------------------------------------------------------------------
+*/
+    if (!empty($newDate)) {
+        $sqlParts[] = "date = ?";
+        $params[] = $newDate;
+        $types .= "s";
     }
+
+    /*
+|--------------------------------------------------------------------------
+| Update start time
+|--------------------------------------------------------------------------
+*/
+    $sqlParts[] = "start_time = ?";
+    $params[] = $newStart;
+    $types .= "s";
 
     $sql = "UPDATE {$target_table} SET " . implode(", ", $sqlParts) . " WHERE id = ?";
     $params[] = $logId;

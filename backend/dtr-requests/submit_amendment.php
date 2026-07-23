@@ -333,6 +333,7 @@ if (!$log_found) {
     exit;
 }
 
+/*
 // ===============================
 // 2️⃣ Build old/new value strings
 // ===============================
@@ -340,6 +341,22 @@ $old_value = "{$row['date']} {$row['start_time']}";
 //$new_value = !empty($new_date) ? "{$new_date} {$new_start_time}" : $new_start_time;
 // Always preserve the original task date
 $new_value = "{$row['date']} {$new_start_time}";
+*/
+
+// ===============================
+// 2️⃣ Build old/new value strings (New)
+// ===============================
+
+$old_value = "{$row['date']} {$row['start_time']}";
+
+// If the user selected a new calendar date,
+// use it.
+// Otherwise preserve the original.
+$effectiveDate = !empty($new_date)
+    ? $new_date
+    : $row['date'];
+
+$new_value = "{$effectiveDate} {$new_start_time}";
 
 // ===============================
 // 3️⃣ Generate unique request UID
