@@ -542,19 +542,24 @@ function loadBillingDropdown(deptIds = []) {
   const dropdown = document.getElementById("billingDropdownMenu");
   if (!dropdown) return;
 
-  if (deptIds.length === 0) {
+  // Makes department optional by deleting this line
+  /*if (deptIds.length === 0) {
     dropdown.innerHTML = `
       <li class="dropdown-item text-muted">Select department first</li>
     `;
     updateBillingLabel();
     return;
-  }
+  }*/
 
   dropdown.innerHTML = `<li class="dropdown-item text-muted">Loading...</li>`;
 
   let url = "../backend/get_billing_by_department.php";
 
-  if (!deptIds.includes("all")) {
+  /*if (!deptIds.includes("all")) {
+    url += `?department_ids=${deptIds.join(",")}`;
+  }*/
+
+  if (deptIds.length > 0 && !deptIds.includes("all")) {
     url += `?department_ids=${deptIds.join(",")}`;
   }
 
@@ -682,7 +687,7 @@ function loadEmployeeDropdown(deptIds = []) {
 }
 
 // TEST VISIBILITY HELPER
-function updateEmployeeVisibility() {
+/*function updateEmployeeVisibility() {
   const selectedDepts = getSelectedDepartments();
 
   const container = document.getElementById("employeeFilterContainer");
@@ -698,6 +703,29 @@ function updateEmployeeVisibility() {
     container.style.display = "";
   } else {
     container.style.display = "none";
+  }
+}*/
+
+function updateEmployeeVisibility() {
+  const container = document.getElementById("employeeFilterContainer");
+
+  switch (chartType) {
+    case "bar":
+      container.style.display = "";
+
+      loadEmployeeDropdown(getSelectedDepartments());
+
+      break;
+
+    case "aht":
+      container.style.display = "";
+
+      break;
+
+    default:
+      container.style.display = "none";
+
+      break;
   }
 }
 
@@ -1195,11 +1223,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = document.getElementById("bar_End_Date").value;
     const mode = document.querySelector("#barMode")?.value || "daily";
     //const billing = document.getElementById("billingFilter")?.value || "";
-    const deptName = getSelectedDepartmentLabel();
+    //const deptName = getSelectedDepartmentLabel();
+    const selectedDepts = getSelectedDepartments();
+
+    const deptName =
+      selectedDepts.length === 0
+        ? "All Departments"
+        : getSelectedDepartmentLabel();
 
     //let url = `../backend/client/fetch_bar_graph.php?dept_id=${selectedDept}&mode=${mode}`;
 
-    const selectedDepts = getSelectedDepartments();
     const selectedBilling = getSelectedBilling();
 
     const employeeId = getSelectedEmployee();
@@ -1412,6 +1445,12 @@ ${deptName} – Monthly FTE Report
   function loadPieChart() {
     //document.getElementById("ahtTableContainer").style.display = "none";
 
+    document.getElementById("fteContent").style.display = "none";
+    document.getElementById("billingContent").style.display = "block";
+
+    document.getElementById("fte-tab").classList.remove("active");
+    document.getElementById("billing-tab").classList.add("active");
+
     const ahtTable = document.getElementById("ahtTableContainer");
 
     ahtTable.style.display = "none";
@@ -1498,6 +1537,10 @@ ${deptName} – Monthly FTE Report
   }
 
   //FOR TESTING
+
+  // ================================================
+  // LOAD AHT CHART FUNCTION
+  // ================================================
 
   function loadAHTChart() {
     //FOR AHT CHART
@@ -1849,21 +1892,30 @@ ${
       .finally(() => hideLoader());
   }
 
-  // FOR BILLING CHART
+  // ================================================
+  // FOR BILLING CHART FUNCTION (LOAD BILLING SUMMARY)
+  // ================================================
+
 
   function loadBillingSummary(start, end) {
+    //NEW VARIABLES FOR THE TITLE
     const selectedDepts = getSelectedDepartments();
     const selectedBilling = getSelectedBilling();
+    const deptName = getSelectedDepartmentLabel();
 
-    if (selectedDepts.length === 0) {
+    /*if (selectedDepts.length === 0) {
       document.getElementById("billingContent").innerHTML =
         `<p class="text-muted text-center">Select a department to view billing breakdown.</p>`;
       return;
-    }
+    }*/
 
     let url = `../backend/client/fetch_billing_graph.php?start_date=${start}&end_date=${end}`;
 
-    if (!selectedDepts.includes("all")) {
+    /*if (!selectedDepts.includes("all")) {
+      url += `&department_ids=${selectedDepts.join(",")}`;
+    }*/
+
+    if (selectedDepts.length > 0 && !selectedDepts.includes("all")) {
       url += `&department_ids=${selectedDepts.join(",")}`;
     }
 
@@ -1879,8 +1931,21 @@ ${
       .then((data) => {
         if (!data.success || !data.labels || data.labels.length === 0) return;
 
-        let html = `<h5 class='fw-bold'>Billing Category Breakdown</h5>
-                  <ul class='list-group'>`;
+        const title =
+          selectedDepts.length === 0
+            ? "Billing Category Breakdown (All Departments)"
+            : `Billing Category Breakdown (${deptName})`;
+
+        let html = `
+<h5 class="fw-bold">
+${title}
+</h5>
+
+<ul class="list-group">
+`;
+
+        /*let html = `<h5 class='fw-bold'>Billing Category Breakdown</h5>
+                  <ul class='list-group'>`;*/
 
         /*data.labels.forEach((label, i) => {
           html += `
@@ -1908,7 +1973,10 @@ ${
       });
   }
 
-  // Render chart
+  // ================================================
+  // RENDER CHART FUNCTION
+  // ================================================
+
   function renderChart(type, labels, values, label, colors = []) {
     if (chartInstance) chartInstance.destroy();
     const canvas = document.getElementById("visualizationChart");
@@ -2011,7 +2079,9 @@ ${
     if (fallbackEl) fallbackEl.style.display = "none";
   }
 
-  // FUNCTION: RENDER TASK LIST
+  // ================================================
+  // RENDER TASK LIST FUNCTION
+  // ================================================
   function renderTaskList(
     tasks,
 
@@ -2081,7 +2151,9 @@ Task Distribution
 
   const applyFiltersBtn = document.getElementById("applyFilters");
 
-  // RESET ANALYTICS FILTERS STARTS ==============================================
+  // ================================================
+  // RESET ANALYTICS FILTERS
+  // ================================================
   function resetAnalyticsFilters() {
     // Dates
     document.getElementById("bar_Start_Date").value = "";
@@ -2094,6 +2166,13 @@ Task Distribution
     document.getElementById("chartTypeDropdown").value = "";
 
     chartType = null;
+
+    // Hide Task Distribution month selector
+    const monthFilter = document.getElementById("month-filter");
+
+    if (monthFilter) {
+      monthFilter.style.display = "none";
+    }
 
     // View
     document.getElementById("barMode").value = "daily";
@@ -2170,6 +2249,30 @@ Task Distribution
     // Restore labels
     document.getElementById("departmentFilterLabel").textContent =
       "Departments";
+
+    // ================================
+    // Restore Analytics Layout
+    // ================================
+
+    // Chart/Layout
+    document
+      .getElementById("analyticsChartColumn")
+      .classList.remove("col-md-12");
+
+    document.getElementById("analyticsChartColumn").classList.add("col-md-7");
+
+    document.getElementById("analyticsDetailsColumn").style.display = "";
+
+    // Restore navigation tabs
+    document.querySelector(".nav-tabs").style.display = "flex";
+
+    // Restore FTE/Billing tabs
+    document.getElementById("fteContent").style.display = "block";
+    document.getElementById("billingContent").style.display = "none";
+
+    document.getElementById("fte-tab").classList.add("active");
+    document.getElementById("billing-tab").classList.remove("active");
+
     document.getElementById("departmentDropdownLabel").textContent =
       "Select Departments";
 
@@ -2189,17 +2292,19 @@ Task Distribution
 
     document.getElementById("ahtTableContainer").innerHTML = "";
 
+    document.getElementById("fteContent").innerHTML = "";
+    document.getElementById("billingContent").innerHTML = "";
+
     document.getElementById("chartFallback").style.display = "block";
 
     // Rebuild normal department filter
     initDepartmentDropdown();
+    loadBillingDropdown([]);
     document.getElementById("employeeDropdownMenu").innerHTML = `
 <li class="dropdown-item text-muted">
 Select Department First
 </li>`;
   }
-
-  // RESET ANALYTICS FILTERS END ===============================================
 
   //RESET FILTER LAYOUT
   const resetBtn = document.getElementById("resetFilters");
@@ -2220,12 +2325,7 @@ Select Department First
 
       const selectedDepts = getSelectedDepartments();
 
-      /*if (chartType !== "billing" && selectedDepts.length === 0) {
-        alert("Please select at least one department.");
-        return;
-      }*/
-
-      if (chartType === "aht") {
+      /*if (chartType === "aht") {
         const workMode = document.querySelector(".workmode-radio:checked");
 
         if (!workMode) {
@@ -2237,6 +2337,31 @@ Select Department First
 
         if (selectedDepts.length === 0) {
           alert("Please select at least one department.");
+          return;
+        }
+      }
+
+      loadGraph();*/
+
+      if (chartType === "aht") {
+        const workMode = document.querySelector(".workmode-radio:checked");
+
+        if (!workMode) {
+          alert("Please select a work mode.");
+          return;
+        }
+      }
+
+      if (chartType === "pie") {
+        const selectedDepts = getSelectedDepartments();
+
+        if (selectedDepts.length === 0) {
+          alert("Please select a department.");
+          return;
+        }
+
+        if (selectedDepts.includes("all") || selectedDepts.length !== 1) {
+          alert("Task Distribution requires exactly one department.");
           return;
         }
       }
