@@ -551,6 +551,62 @@ get_scheduler_matrix.php
 export_tracker_summary_xlsx.php
 export_department_tracker_summary_xlsx.php	
 
-07102026
 
+07102026 (will deploy to staging)
+
+//FOR THE NEW INDIVIDUAL ANALYTICS
 data-visualization.js
+fetch_bar_graph.php
+fetch_pie_graph.php
+admin-dashboard.php changes
+
+external/
+index.html
+external.css
+external.js
+
+07162026
+
+view-commend-list-modal.php
+get_single_commendation.php
+commendations-notif.js viewReceivedCommendation function
+
+
+07172026(for deployment 7-8) STATUS: For Deployment
+
+admin-dashboard.php
+lib/aht_query.php
+export_aht_excel.php
+fetch_aht_graph.php
+get_tasks_by_workmode.php
+get_department_work_modes.php
+data-visualization.js
+aht-export.js
+
+
+07202026
+export-aht-excel.php (removed away break and end shift when exporting)
+midnight-refresh-test.js (staging only)
+
+get_tasks_by_workmode.php
+data-visualization.js
+
+07222026
+data-visualization.js changes
+fetch_billing_graph.php (from date to work date)
+
+07232026 (deployed for prod and stg)
+
+process_amendment.php
+submit_amendment.php
+
+07242026 (local)
+fetch_aht_graph.php (accurate)
+lib/aht_query.php
+
+ALIGNED MBR
+
+SME - Clinic taggings are in a new  WM for testing (CLINIC before) : SME - Conducting Training - Clinic 
+PHARMACY - Mismatch taggings from Keylly June 4 and 10 (2 SME taggings are assigned to PHARMACY)(Team Huddle and Training)
+PORTFOLIO aligned (SME - Conducting Team Huddle - Portfolio assigned to PORTFOLIO) (Adjusted Kay's tagging of 23:58 - 01:58 duration of 1:40 to 2:00
+
