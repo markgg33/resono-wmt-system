@@ -75,7 +75,9 @@ FROM(
 
         volume_remark,
 
-        date
+        date,
+
+        work_date
 
     FROM task_logs
 
@@ -93,7 +95,9 @@ FROM(
 
         volume_remark,
 
-        date
+        date,
+
+        work_date
 
     FROM task_logs_archive
 
@@ -106,11 +110,12 @@ INNER JOIN users u
 ON u.id=t.user_id
 
 INNER JOIN user_departments ud
-ON ud.user_id=t.user_id
+ON ud.user_id = t.user_id
+AND ud.is_primary = 1
 
 WHERE
 
-t.date BETWEEN ? AND ?
+t.work_date BETWEEN ? AND ?
 
 ";
 

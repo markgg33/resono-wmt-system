@@ -79,7 +79,8 @@ FROM (
         user_id,
         total_duration,
         volume_remark,
-        date
+        date,
+        work_date
     FROM task_logs
 
     UNION ALL
@@ -90,7 +91,8 @@ FROM (
         user_id,
         total_duration,
         volume_remark,
-        date
+        date,
+        work_date
     FROM task_logs_archive
 
 ) t
@@ -102,8 +104,9 @@ INNER JOIN users u
 
 INNER JOIN user_departments ud
     ON ud.user_id = t.user_id
+   AND ud.is_primary = 1
 
-WHERE t.date BETWEEN ? AND ?
+WHERE t.work_date BETWEEN ? AND ?
 
 ";
 
