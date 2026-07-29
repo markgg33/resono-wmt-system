@@ -1,46 +1,90 @@
-function changePage(page) {
+// =====================================================
+// PAGE LIFECYCLE MANAGER
+// =====================================================
+
+window.PageManager = {
+  modules: {},
+
+  register(page, module) {
+    this.modules[page] = {
+      initialized: false,
+      ...module,
+    };
+  },
+
+  async activate(page) {
+    const module = this.modules[page];
+
+    if (!module) return;
+
+    // Run only once
+    if (!module.initialized) {
+      module.initialized = true;
+
+      if (typeof module.init === "function") {
+        await module.init();
+      }
+    }
+
+    // Run every time page opens
+    if (typeof module.refresh === "function") {
+      await module.refresh();
+    }
+  },
+};
+
+// =====================================================
+// PAGE NAVIGATION
+// =====================================================
+
+async function changePage(page) {
   // Hide all pages
-  document.querySelectorAll(".page-content").forEach(function (pageContent) {
+  document.querySelectorAll(".page-content").forEach((pageContent) => {
     pageContent.style.display = "none";
   });
 
-  // Show target page
-  document.getElementById(page + "-page").style.display = "block";
+  const target = document.getElementById(page + "-page");
 
-  // ✅ FIX: delay initialization until DOM is ready/rendered
-  if (page === "data-visualization") {
-    setTimeout(() => {
-      initDepartmentDropdown();
-      loadEmployeeDropdown();
-    }, 0); // minimal delay, enough for render cycle
+  if (!target) {
+    console.warn(`Page '${page}' not found.`);
+    return;
   }
 
-  // Save last visited page
+  target.style.display = "block";
+
+  // NEW
+  await PageManager.activate(page);
+
+  // Save page
   localStorage.setItem("lastPage", page);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Get saved page, fallback to my-tracker if none
-  const lastPage = localStorage.getItem("lastPage") || "my-tracker";
-  changePage(lastPage);
+// =====================================================
+// INITIALIZATION
+// =====================================================
 
-  // Highlight the correct sidebar item
+document.addEventListener("DOMContentLoaded", () => {
   const sidebarItems = document.querySelectorAll(".sidebar-list-item");
+
   sidebarItems.forEach((item) => {
-    item.classList.remove("active");
-    if (item.getAttribute("data-page") === lastPage) {
+    item.addEventListener("click", () => {
+      sidebarItems.forEach((i) => i.classList.remove("active"));
+
       item.classList.add("active");
-    }
-  });
 
-  // Handle clicks to change pages
-  sidebarItems.forEach((item) => {
-    item.addEventListener("click", function () {
-      sidebarItems.forEach((item) => item.classList.remove("active"));
-      this.classList.add("active");
-
-      const page = this.getAttribute("data-page");
-      changePage(page);
+      changePage(item.dataset.page);
     });
   });
+
+  const lastPage = localStorage.getItem("lastPage") || "my-tracker";
+
+  const active = document.querySelector(
+    `.sidebar-list-item[data-page="${lastPage}"]`,
+  );
+
+  if (active) {
+    active.classList.add("active");
+  }
+
+  changePage(lastPage);
 });

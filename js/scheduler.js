@@ -41,7 +41,7 @@ function parseKey(key) {
 
 function getCellByKey(key) {
   return document.querySelector(
-    `td.scheduler-cell[data-key="${CSS.escape(key)}"]`,
+    `td.scheduler-cell[data-key="${CSS.escape(key)}"]`
   );
 }
 
@@ -367,7 +367,9 @@ async function loadSchedulerMatrix() {
 
   // 🔥 NOW FETCH LEAVES
   const leaveRes = await fetch(
-    `../backend/scheduler/get_approved_leave_days.php?start=${data.start}&end=${data.end}${deptId ? `&department_id=${deptId}` : ""}`,
+    `../backend/scheduler/get_approved_leave_days.php?start=${data.start}&end=${
+      data.end
+    }${deptId ? `&department_id=${deptId}` : ""}`
   );
 
   const leaveData = await leaveRes.json();
@@ -385,7 +387,7 @@ function confirmDeleteSelected() {
 
   if (
     !confirm(
-      `Delete ${scheduler.selected.size} cell(s)? This will remove saved schedule from DB after you click Save Changes.`,
+      `Delete ${scheduler.selected.size} cell(s)? This will remove saved schedule from DB after you click Save Changes.`
     )
   )
     return;
@@ -557,7 +559,11 @@ function renderMatrix() {
           return `
   <td class="${cls}" data-key="${key}" data-cell="1">
     <div class="scheduler-val">${escapeHtml(displayCode)}</div>
-    ${displayTime ? `<div class="scheduler-time">${escapeHtml(displayTime)}</div>` : ""}
+    ${
+      displayTime
+        ? `<div class="scheduler-time">${escapeHtml(displayTime)}</div>`
+        : ""
+    }
   </td>
 `;
         })
@@ -740,7 +746,7 @@ function applyToSelected() {
     alert(
       "Please select a valid call time (HH:MM) before applying " +
         codeUpper +
-        ".",
+        "."
     );
     return;
   }
@@ -751,7 +757,7 @@ function applyToSelected() {
   });
 
   bootstrap.Modal.getInstance(
-    document.getElementById("schedulerConfirmModal"),
+    document.getElementById("schedulerConfirmModal")
   )?.hide();
   renderMatrix();
   syncSchedulerCallTimeFromSelection();
@@ -767,7 +773,7 @@ function escapeHtml(str) {
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#039;",
-      })[s],
+      }[s])
   );
 }
 
@@ -803,7 +809,7 @@ async function saveSchedulerChanges() {
 
   if (
     !confirm(
-      `Save ${changes.length} update(s) and ${deletes.length} delete(s)?`,
+      `Save ${changes.length} update(s) and ${deletes.length} delete(s)?`
     )
   )
     return;
@@ -862,6 +868,19 @@ function attachSchedulerSelectionHandlers() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+/*document.addEventListener("DOMContentLoaded", () => {
   loadSchedulerDepartments();
+});*/
+
+PageManager.register("scheduler", {
+  async init() {
+    console.log("Scheduler initialized");
+
+    await loadSchedulerDepartments();
+  },
+
+  async refresh() {
+    // Empty for now.
+    // Later we can reload data if desired.
+  },
 });
